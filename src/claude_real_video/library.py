@@ -139,6 +139,7 @@ class H(http.server.BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")  # page + notes always fresh
         self.end_headers()
         self.wfile.write(body)
 
@@ -237,13 +238,26 @@ button,input,select,textarea{font:inherit;color:inherit}
 #side h1{font-size:16px;margin:0}
 input[type=search],select,textarea{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
 .chips{display:flex;flex-wrap:wrap;gap:6px}.chips label{font-size:12px;color:var(--mute);display:flex;gap:4px;align-items:center}
-#tree{overflow:auto;flex:1;padding:6px 0}
-details>summary{cursor:pointer;padding:4px 12px;font-weight:600;list-style:none}details>summary::before{content:"▸ ";color:var(--mute)}details[open]>summary::before{content:"▾ "}
-details details>summary{padding-left:26px;font-weight:500;color:var(--mute)}
-.vid{display:block;padding:4px 12px 4px 40px;cursor:pointer;border-left:3px solid transparent}
-.vid:hover{background:var(--sel)}.vid.on{background:var(--sel);border-left-color:var(--acc)}
-.vid small{color:var(--mute);display:block;font-size:11px}
-.count{color:var(--mute);font-weight:400;font-size:12px}
+#tree{overflow:auto;flex:1;padding:8px 8px 16px}
+details>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;user-select:none}
+details>summary::-webkit-details-marker{display:none}
+details>summary::before{content:"";width:6px;height:6px;border-right:2px solid var(--mute);border-bottom:2px solid var(--mute);transform:rotate(-45deg);transition:transform .15s;flex:none}
+details[open]>summary::before{transform:rotate(45deg)}
+.topic{margin-top:6px}
+.topic>summary{padding:10px 8px 6px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}
+.subf>summary{padding:6px 8px;margin:2px 0;border-radius:6px;font-weight:600;font-size:13px}
+.subf>summary:hover{background:var(--sel)}
+.subf .list{padding:2px 0 6px 14px;display:flex;flex-direction:column;gap:3px}
+.count{margin-left:auto;font-size:11px;font-weight:600;color:var(--mute);background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:0 7px;letter-spacing:0;text-transform:none}
+.vid{display:flex;gap:10px;align-items:flex-start;padding:7px 8px;border-radius:8px;cursor:pointer;border:1px solid transparent}
+.vid:hover{background:var(--sel)}.vid.on{background:var(--sel);border-color:var(--acc)}
+.badge{flex:none;min-width:30px;height:24px;padding:0 5px;border-radius:6px;background:var(--bg);border:1px solid var(--line);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums;color:var(--mute)}
+.vid.on .badge{background:var(--acc);border-color:var(--acc);color:#fff}
+.vt{min-width:0;flex:1}
+.vt b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-weight:500;font-size:13px;line-height:1.35}
+.pills{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.pill{font-size:10.5px;line-height:16px;padding:0 6px;border-radius:999px;background:var(--bg);border:1px solid var(--line);color:var(--mute);white-space:nowrap}
+.pill.ok{color:#2e8b57;border-color:#2e8b5755}.pill.me{color:var(--acc);border-color:var(--acc)}
 #main{flex:1;display:flex;flex-direction:column;min-width:0}
 #top{padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel)}
 #top h2{margin:0;font-size:16px}#crumb{color:var(--mute);font-size:12px}
@@ -323,12 +337,17 @@ function tree(){
   const vs=LIB.filter(v=>(!tp||v.topic==tp)&&(!tf||(v.title+' '+v.id).toLowerCase().includes(tf))
     &&(!$('#fSp').checked||v.speakers.length)&&(!$('#fAct').checked||v.has_actions)&&(!$('#fMine').checked||v.has_my_notes));
   const g={};for(const v of vs)((g[v.topic]??={})[v.sub||'']??=[]).push(v);
+  const item=v=>{const leaf=v.id.split('/').pop(),m=leaf.match(/^(?:call-)?(?:m(\d+)-)?(\d+)/i);
+    const badge=m?(m[1]?m[1]+'.':'')+m[2]:'•';
+    const title=v.title.replace(/^[\w-]{1,12}:\s*/,'').replace(/\s*\([^)]*\)\s*$/,'');
+    const sp=v.speakers.length?(v.speakers.length<=3&&!v.speakers.some(s=>/^SPEAKER_/.test(s))?v.speakers.join(' & '):v.speakers.length+' speakers'):'';
+    return `<a class="vid${cur&&cur.id==v.id?' on':''}" data-id="${esc(v.id)}" title="${esc(v.title)}"><span class="badge">${esc(badge)}</span><span class="vt"><b>${esc(title)}</b><span class="pills"><span class="pill">${fmt(v.duration)}</span>${sp?`<span class="pill">${esc(sp)}</span>`:''}${v.has_actions?'<span class="pill ok">✓ actions</span>':''}${v.has_my_notes?'<span class="pill me">✎ my notes</span>':''}</span></span></a>`};
   let h='';
   for(const [t,subs] of Object.entries(g)){const n=Object.values(subs).flat().length;
-    h+=`<details open><summary>${esc(pretty(t))} <span class="count">${n}</span></summary>`;
+    h+=`<details class="topic" open><summary>${esc(pretty(t))}<span class="count">${n}</span></summary>`;
     for(const [s,list] of Object.entries(subs)){
-      const items=list.map(v=>`<a class="vid${cur&&cur.id==v.id?' on':''}" data-id="${esc(v.id)}">${esc(v.title)}<small>${fmt(v.duration)}${v.speakers.length?' · '+esc(v.speakers.slice(0,3).join(', '))+(v.speakers.length>3?' +'+(v.speakers.length-3):''):''}${v.has_actions?' · actions':''}${v.has_my_notes?' · my notes':''}</small></a>`).join('');
-      h+=s?`<details open><summary>${esc(s.split('/').map(pretty).join(' / '))} <span class="count">${list.length}</span></summary>${items}</details>`:items}
+      const items=`<div class="list">${list.map(item).join('')}</div>`;
+      h+=s?`<details class="subf" open><summary>${esc(s.split('/').map(pretty).join(' / '))}<span class="count">${list.length}</span></summary>${items}</details>`:items}
     h+='</details>'}
   $('#tree').innerHTML=h||'<div class="empty">No videos match.</div>'}
 ['#topic','#tf','#fSp','#fAct','#fMine'].forEach(s=>$(s).addEventListener('input',tree));
