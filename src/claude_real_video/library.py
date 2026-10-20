@@ -315,7 +315,7 @@ const pretty=s=>s.replace(/^\d+-/,'').replace(/[-_]/g,' ').replace(/\b\w/g,c=>c.
 function hl(text,q){let h=esc(text);for(const w of (q||'').toLowerCase().split(/\s+/).filter(Boolean)){h=h.replace(new RegExp('('+w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','ig'),'<mark>$1</mark>')}return h}
 function md(src){ // small markdown: headings, bullets, bold, code, clickable @mm:ss
   const inl=s=>esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/`([^`]+)`/g,'<code>$1</code>')
-    .replace(/@?\b(\d{1,2}):(\d\d)(?::(\d\d))?\b/g,(m,a,b,c)=>`<a class="t" data-t="${c?(+a*3600+ +b*60+ +c):(+a*60+ +b)}">${m}</a>`);
+    .replace(/@?\b(\d{1,3}):(\d\d)(?::(\d\d))?\b/g,(m,a,b,c)=>`<a class="t" data-t="${c?(+a*3600+ +b*60+ +c):(+a*60+ +b)}">${m}</a>`);
   let out='',list=0;
   for(const l of src.split('\n')){const h=l.match(/^(#{1,4})\s+(.*)/),li=l.match(/^(\s*)[-*]\s+(.*)/);
     if(li){const d=Math.floor(li[1].length/2)+1;while(list<d){out+='<ul>';list++}while(list>d){out+='</ul>';list--}out+='<li>'+inl(li[2]);continue}
