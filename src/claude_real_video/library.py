@@ -8,6 +8,8 @@ saved to disk next to the video). Search runs across every transcript and
 every note at once, from the page or from the command line:
 
     python library.py                     # serve on http://127.0.0.1:8770
+    python library.py --root DIR --port N --no-open   # another library folder / port
+                                          # (same as CRV_LIBRARY_ROOT / CRV_LIBRARY_PORT)
     python library.py search "guarantee"  # same search, printed (for an AI)
 
 Stdlib only, binds to 127.0.0.1, nothing leaves the machine.
@@ -27,6 +29,7 @@ ROOT = Path(os.environ.get("CRV_LIBRARY_ROOT",
             Path(__file__).resolve().parents[2] / "crv-out")).resolve()
 PORT = int(os.environ.get("CRV_LIBRARY_PORT", "8770"))
 VIDEO_NAMES = ("source.mp4", "source.webm", "source.mkv", "video.mp4")
+UI_FILE = Path(__file__).resolve().parent / "library_ui" / "index.html"
 ACTION_RE = re.compile(r"action|next step|to-?do|homework", re.I)
 
 
@@ -150,8 +153,10 @@ class H(http.server.BaseHTTPRequestHandler):
         u = urllib.parse.urlparse(self.path)
         q = {k: v[0] for k, v in urllib.parse.parse_qs(u.query).items()}
         try:
-            if u.path == "/":
-                return self._send(PAGE.encode(), "text/html; charset=utf-8")
+            if u.path in ("/", "/index.html"):
+                return self._send(read(UI_FILE).encode() or CLASSIC_PAGE.encode(), "text/html; charset=utf-8")
+            if u.path == "/classic":  # the previous single-theme UI, kept until Bala retires it
+                return self._send(CLASSIC_PAGE.encode(), "text/html; charset=utf-8")
             if u.path == "/api/library":
                 return self._json({"root": str(ROOT), "videos": library()})
             if u.path == "/api/search":
@@ -224,7 +229,7 @@ class H(http.server.BaseHTTPRequestHandler):
         self._json({"saved": True, "bytes": len(text.encode())})
 
 
-PAGE = r"""<!doctype html>
+CLASSIC_PAGE = r"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Video Library</title>
@@ -401,7 +406,20 @@ load();
 </script></body></html>"""
 
 
+def _arg(flag: str) -> str | None:
+    if flag in sys.argv:
+        i = sys.argv.index(flag)
+        if i + 1 < len(sys.argv):
+            return sys.argv[i + 1]
+    return None
+
+
 def main() -> None:
+    global ROOT, PORT
+    if _arg("--root"):
+        ROOT = Path(_arg("--root")).resolve()
+    if _arg("--port"):
+        PORT = int(_arg("--port"))
     if len(sys.argv) > 2 and sys.argv[1] == "search":
         for h in search(" ".join(sys.argv[2:])):
             t = "" if h["t"] is None else f"@{int(h['t'] // 60)}:{int(h['t'] % 60):02d} "

@@ -45,3 +45,6 @@ Issues = "https://github.com/HUANGCHIHHUNGLeo/claude-real-video/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+claude_real_video = ["library_ui/*.html"]
