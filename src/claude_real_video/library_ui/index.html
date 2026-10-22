@@ -305,6 +305,9 @@ video{width:100%;height:100%;display:block;background:#000;object-fit:contain}
 [data-theme=dungeon] .scrub .mk.note{background:#78C8E8}
 [data-theme=overworld] .scrub .mk.note{background:#FCBC3C}
 .scrub .mk{height:14px;top:6px}
+.scrub .mk.chap{background:var(--muted);width:2px;margin-left:-1px;opacity:.7}
+.ln.chap{padding-top:36px;margin-top:6px}
+.ln.chap::before{content:attr(data-chap);position:absolute;left:8px;right:8px;top:8px;font-weight:700;color:var(--accent);border-bottom:1px solid var(--border);padding-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .scrub .mk:hover{transform:scaleX(1.8);opacity:1}
 [data-theme=overworld] .scrub .trk,[data-theme=overworld] .scrub .fill,[data-theme=overworld] .scrub .thumb{border-radius:0}
 .pbtn{width:44px}
@@ -566,6 +569,7 @@ a.ts,.chipt{display:inline-block;font:600 11.5px/1.4 var(--font-mono);color:var(
           <button class="ibtn" id="fPrev" aria-label="Previous match">‹</button>
           <button class="ibtn" id="fNext" aria-label="Next match">›</button>
           <select id="fSpk" aria-label="Speaker"><option value="">All speakers</option></select>
+          <select id="fChap" aria-label="Jump to chapter" hidden></select>
           <label class="tgl"><input type="checkbox" id="follow" checked><span class="sw"></span>Follow</label>
         </div>
         <div id="tlist" class="scroll"></div>
@@ -806,10 +810,11 @@ async function openVideo(id,t){
   CUR.data=d;SEG=d.segments||[];STARTS=SEG.map(s=>s.start);
   // speaker colour = order of first appearance, stable for the whole video
   CUR.colors={};let k=0;for(const s of SEG)if(s.speaker&&!(s.speaker in CUR.colors))CUR.colors[s.speaker]=k++;
-  renderSpeakers();renderTranscript();renderAi();renderActions();setNotes(d.my_notes||'');
+  renderSpeakers();renderTranscript();renderChapters();renderAi();renderActions();setNotes(d.my_notes||'');
   setDur();renderMarkers();updateActions();applyFilters();
   lastActive=-2;updateActive(true);
-  if(t!=null)initialSeek(t);
+  if(t!=null){if(pendingPlay)seekTo(t,true);else initialSeek(t)}  // a clicked search hit plays; a pasted deep link only seeks
+  pendingPlay=false;
   writeHash(true);
 }
 function renderMeta(){
@@ -831,6 +836,15 @@ function renderSpeakers(){
   const sel=$('#fSpk');sel.innerHTML='<option value="">All speakers</option>'+Object.keys(CUR.colors).map(s=>`<option value="${esc(s)}">${esc(spName(s))}</option>`).join('');
   sel.hidden=!Object.keys(CUR.colors).length;
 }
+/* YouTube chapters (chapters.json): a heading on each chapter's first line + a jump menu */
+let CH=[];
+function renderChapters(){
+  CH=(CUR.data.chapters||[]).map(c=>({...c,i:Math.max(0,SEG.findIndex(s=>s.start>=c.t-1))}));
+  CH.forEach(c=>{const r=ROWS[c.i];if(r){r.classList.add('chap');r.dataset.chap=c.title}});
+  const sel=$('#fChap');sel.hidden=!CH.length;
+  sel.innerHTML='<option value="">Chapters ('+CH.length+')</option>'+CH.map((c,k)=>`<option value="${k}">${fmt(c.t)} ${esc(c.title)}</option>`).join('');
+}
+$('#fChap').onchange=e=>{const c=CH[+e.target.value];e.target.value='';if(!c)return;seekTo(c.t,true);if(ROWS[c.i])scrollToRow(ROWS[c.i],false)};
 function renderTranscript(){
   const list=$('#tlist');
   if(!SEG.length){list.innerHTML='<div class="empty"><h3>No transcript</h3><p>This video has no transcript file.</p></div>';ROWS=[];return}
@@ -936,7 +950,7 @@ scrub.addEventListener('keydown',e=>{const k=e.key;if(k==='ArrowLeft'||k==='Arro
 function renderMarkers(){
   const box=$('#mks'),d=getDur();if(!CUR||!CUR.data||!d){box.innerHTML='';return}
   const mk=(arr,cls,who)=>arr.filter(s=>s.t<=d).map(s=>`<button class="mk ${cls}" style="left:${s.t/d*100}%" data-t="${s.t}" title="${esc(fmt(s.t)+' \u2014 '+who+': '+s.text.slice(0,120))}" aria-label="${esc(fmt(s.t)+' '+s.text.slice(0,60))}"></button>`).join('');
-  box.innerHTML=mk(stampsIn(CUR.data.actions),'act','Action')+mk(stampsIn($('#mn').value),'note','Note');
+  box.innerHTML=mk(CH.map(c=>({t:c.t,text:c.title})),'chap','Chapter')+mk(stampsIn(CUR.data.actions),'act','Action')+mk(stampsIn($('#mn').value),'note','Note');
 }
 $('#mks').addEventListener('click',e=>{const b=e.target.closest('.mk');if(b){e.stopPropagation();seekTo(+b.dataset.t,true)}});
 $('#mks').addEventListener('pointerdown',e=>e.stopPropagation());
@@ -1080,7 +1094,7 @@ function resultsHtml(){
   const words=hitsQ.toLowerCase().split(/\s+/).filter(Boolean);
   const head=`<div class="rhead"><b>${esc(flav().found(list.length,hitsQ))}</b><span class="seg" role="group" aria-label="Kind">${KINDS.map(([k,l])=>`<button data-k="${k}" aria-pressed="${hitsKind===k}">${l}</button>`).join('')}</span><button class="btn" data-clear="1" aria-label="Clear results">\u00D7</button></div>`;
   if(!list.length)return head+`<div class="empty"><h3>No matches for \u201c${esc(hitsQ)}\u201d</h3><p>Try fewer words, or search All topics</p></div>`;
-  return head+'<div class="rlist" role="list">'+list.slice(0,300).map(h=>`<button class="row" role="listitem" data-id="${esc(h.id)}" data-t="${h.t==null?'':h.t}"><div class="rt"><b>${esc(cleanTitle(h.title))}</b><span>${esc(h.kind)}</span>${h.t!=null?`<span class="tt">${fmt(h.t)}</span>`:''}${h.speaker?`<span>${esc(spName(h.speaker))}</span>`:''}</div><div class="rx">${hlText(h.text,words)}</div></button>`).join('')+(list.length>300?`<div class="empty"><p>Showing the first 300 of ${list.length}. Add a word to narrow it.</p></div>`:'')+'</div>';
+  return head+'<div class="rlist" role="list">'+list.slice(0,300).map(h=>`<button class="row" role="listitem" data-id="${esc(h.id)}" data-t="${h.t==null?'':h.t}"><div class="rt"><b>${esc(cleanTitle(h.title))}</b><span>${esc(h.kind)}</span>${h.t!=null?`<span class="tt" title="${h.approx?'Best-matching transcript moment for this note':''}">${h.approx?'≈ ':''}${fmt(h.t)}</span>`:'<span class="tt">no time</span>'}${h.speaker?`<span>${esc(spName(h.speaker))}</span>`:''}</div><div class="rx">${hlText(h.text,words)}</div></button>`).join('')+(list.length>300?`<div class="empty"><p>Showing the first 300 of ${list.length}. Add a word to narrow it.</p></div>`:'')+'</div>';
 }
 function renderResults(){
   const html=resultsHtml();

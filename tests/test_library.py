@@ -199,3 +199,12 @@ def test_pages(lib):
     assert st == 200 and b"crvlib" in classic                           # the old UI stays reachable
     assert call(lib, "GET", "/index.html")[0] == 200
     assert call(lib, "GET", "/nope")[0] == 404
+
+
+def test_best_moment_points_unstamped_note_at_its_transcript_part():
+    segs = [{"start": 0, "text": "welcome to the show today"},
+            {"start": 30, "text": "build citations first then reviews on the business profile"},
+            {"start": 60, "text": "thanks for watching"}]
+    assert library.best_moment("- Build citations and reviews on the Business Profile first", segs) == 30
+    assert library.best_moment("# Build citations reviews business profile", segs) is None   # headings never matched
+    assert library.best_moment("- Totally unrelated pricing tiers story", segs) is None      # weak overlap = no time

@@ -104,6 +104,51 @@ def library() -> list[dict]:
     return items
 
 
+STOP = set("that this with from have they them their there what when where which about would could should into your just like will been were more than then some also very only over make made does doing because really thing things going want need".split())
+WORD_RE = re.compile(r"[a-z0-9']{4,}")
+
+
+def _words(text: str) -> set[str]:
+    return {w for w in WORD_RE.findall(text.lower()) if w not in STOP}
+
+
+def best_moment(line: str, segs: list[dict], window: int = 3) -> float | None:
+    """Start time of the transcript stretch a note line summarises: the window of
+    `window` consecutive segments sharing the most distinct words with the line.
+    None for headings, or when under max(3, 30% of the line's words) overlap."""
+    # ponytail: plain word overlap, swap for embeddings if notes get too abstract to match
+    if line.lstrip().startswith("#"):
+        return None
+    want = _words(re.sub(r"\[@?[\d:]+\]", "", line))
+    if len(want) < 3:
+        return None
+    seg_words = [_words(s.get("text", "")) for s in segs]
+    best, best_t = max(3, int(len(want) * 0.3)) - 1, None
+    for i in range(len(segs)):
+        got = len(want & set().union(*seg_words[i:i + window]))
+        if got > best:  # start at the window's first segment that actually shares a word
+            j = next(k for k in range(i, i + window) if want & seg_words[k])
+            best, best_t = got, segs[j].get("start", 0)
+    return best_t
+
+
+def chapters(d: Path) -> list[dict]:
+    try:
+        return json.loads(read(d / "chapters.json")).get("chapters", [])
+    except ValueError:
+        return []
+
+
+def fetch_chapters(d: Path, url: str) -> int:
+    """Save the video's YouTube chapters (yt-dlp metadata, no download) to chapters.json."""
+    import subprocess
+    meta = json.loads(subprocess.run(["yt-dlp", "--skip-download", "-J", url], capture_output=True,
+                                     text=True, encoding="utf-8", check=True).stdout)
+    chs = [{"t": int(c["start_time"]), "title": c["title"]} for c in meta.get("chapters") or []]
+    (d / "chapters.json").write_text(json.dumps({"url": url, "chapters": chs}, indent=1), encoding="utf-8")
+    return len(chs)
+
+
 def search(q: str, topic: str = "", limit: int = 400) -> list[dict]:
     """Every word must appear in the line (any order, case-insensitive)."""
     words = [w for w in q.lower().split() if w]
@@ -114,7 +159,8 @@ def search(q: str, topic: str = "", limit: int = 400) -> list[dict]:
         if topic and v["topic"] != topic:
             continue
         d = ROOT / v["id"]
-        for s in segments(d):
+        segs = segments(d)
+        for s in segs:
             t = s.get("text", "")
             if all(w in t.lower() for w in words):
                 hits.append({"id": v["id"], "title": v["title"], "kind": "transcript",
@@ -123,12 +169,15 @@ def search(q: str, topic: str = "", limit: int = 400) -> list[dict]:
             for line in read(d / fname).splitlines():
                 if all(w in line.lower() for w in words):
                     m = re.search(r"@(\d+):(\d\d)(?::(\d\d))?", line)
-                    t = None
+                    t, approx = None, False
                     if m:
                         a, b, c = m.groups()
                         t = int(a) * 3600 + int(b) * 60 + int(c) if c else int(a) * 60 + int(b)
+                    elif kind == "ai notes":  # no stamp: point at the transcript part it summarises
+                        t = best_moment(line, segs)
+                        approx = t is not None
                     hits.append({"id": v["id"], "title": v["title"], "kind": kind,
-                                 "t": t, "speaker": "", "text": line.strip()})
+                                 "t": t, "approx": approx, "speaker": "", "text": line.strip()})
         if len(hits) >= limit:
             break
     return hits[:limit]
@@ -164,7 +213,7 @@ class H(http.server.BaseHTTPRequestHandler):
             if u.path == "/api/video":
                 d = video_dir(q["id"])
                 notes = read(d / "notes.md")
-                return self._json({"segments": segments(d), "notes": notes,
+                return self._json({"segments": segments(d), "notes": notes, "chapters": chapters(d),
                                    "actions": action_steps(notes), "my_notes": read(d / "my-notes.md")})
             if u.path == "/media":
                 return self._media(video_dir(q["id"]))
@@ -420,6 +469,10 @@ def main() -> None:
         ROOT = Path(_arg("--root")).resolve()
     if _arg("--port"):
         PORT = int(_arg("--port"))
+    if len(sys.argv) > 3 and sys.argv[1] == "chapters":  # chapters <video-id> <youtube-url>
+        n = fetch_chapters(video_dir(sys.argv[2]), sys.argv[3])
+        print(f"{n} chapter(s) saved to {sys.argv[2]}/chapters.json")
+        return
     if len(sys.argv) > 2 and sys.argv[1] == "search":
         for h in search(" ".join(sys.argv[2:])):
             t = "" if h["t"] is None else f"@{int(h['t'] // 60)}:{int(h['t'] % 60):02d} "
