@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import http.server
 import json
+import math
 import os
 import re
 import sys
@@ -76,6 +77,28 @@ def action_steps(notes: str) -> str:
     return "\n".join(out).strip()
 
 
+def screens(d: Path) -> list:
+    """screens.json: [{t, frame, title, note, links}] — what was shown on screen, for the Screens tab."""
+    try:
+        data = json.loads(read(d / "screens.json") or "[]")
+    except ValueError:
+        return []
+    out = []  # agent-written file: keep only well-typed entries, coerce the rest
+    for e in data if isinstance(data, list) else []:
+        if not isinstance(e, dict) or not re.fullmatch(r"frame_\d+\.jpg", str(e.get("frame", ""))):
+            continue
+        t = e.get("t")
+        try:  # 1e999 -> inf (breaks browser JSON), 400-digit ints -> OverflowError
+            t = float(t) if isinstance(t, (int, float)) and not isinstance(t, bool) else 0.0
+        except OverflowError:
+            t = 0.0
+        links = e.get("links") if isinstance(e.get("links"), list) else []
+        out.append({"t": t if math.isfinite(t) and t >= 0 else 0.0,
+                    "frame": e["frame"], "title": str(e.get("title") or ""), "note": str(e.get("note") or ""),
+                    "links": [u for u in links if isinstance(u, str) and re.match(r"https?://", u)]})
+    return out
+
+
 def title_of(d: Path, notes: str) -> str:
     m = re.search(r"^#\s+(.+)$", notes, re.M)
     return m.group(1).strip() if m else pretty(d.name)
@@ -100,6 +123,7 @@ def library() -> list[dict]:
             "has_notes": bool(notes.strip()),
             "has_actions": bool(action_steps(notes)),
             "has_my_notes": bool(read(d / "my-notes.md").strip()),
+            "has_screens": bool(screens(d)),
         })
     return items
 
@@ -178,6 +202,14 @@ def search(q: str, topic: str = "", limit: int = 400) -> list[dict]:
                         approx = t is not None
                     hits.append({"id": v["id"], "title": v["title"], "kind": kind,
                                  "t": t, "approx": approx, "speaker": "", "text": line.strip()})
+        for sc in screens(d):
+            text = " — ".join(x for x in (sc["title"], sc["note"]) if x)
+            links = " ".join(sc["links"])
+            if all(w in (text + " " + links).lower() for w in words):
+                if not all(w in text.lower() for w in words):  # matched via a link: show it
+                    text = f"{text} · {links}"
+                hits.append({"id": v["id"], "title": v["title"], "kind": "screens",
+                             "t": sc.get("t"), "approx": False, "speaker": "", "text": text})
         if len(hits) >= limit:
             break
     return hits[:limit]
@@ -214,9 +246,18 @@ class H(http.server.BaseHTTPRequestHandler):
                 d = video_dir(q["id"])
                 notes = read(d / "notes.md")
                 return self._json({"segments": segments(d), "notes": notes, "chapters": chapters(d),
-                                   "actions": action_steps(notes), "my_notes": read(d / "my-notes.md")})
+                                   "actions": action_steps(notes), "my_notes": read(d / "my-notes.md"),
+                                   "screens": screens(d)})
             if u.path == "/media":
                 return self._media(video_dir(q["id"]))
+            if u.path == "/still":  # a Screens-tab screenshot: hires/ first, crv's 640px frames/ fallback
+                d, name = video_dir(q["id"]), q["f"]
+                if not re.fullmatch(r"frame_\d+\.jpg", name):
+                    raise ValueError("bad frame name")
+                f = next((p for p in (d / "hires" / name, d / "frames" / name) if p.is_file()), None)
+                if not f:
+                    return self._json({"error": "no such frame"}, 404)
+                return self._send(f.read_bytes(), "image/jpeg")
         except (ValueError, KeyError) as e:
             return self._json({"error": str(e)}, 400)
         self._json({"error": "not found"}, 404)

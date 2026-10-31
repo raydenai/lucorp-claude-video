@@ -81,7 +81,7 @@ def main() -> None:
     ap.add_argument("--viewer", action="store_true",
                     help="also write viewer.html — browse the video, keyframes and "
                          "transcript in one local page (double-click to open)")
-    ap.add_argument("--whisper-model", default="base",
+    ap.add_argument("--whisper-model", default=os.environ.get("CRV_WHISPER_MODEL", "base"),
                     choices=["tiny", "base", "small", "medium", "large", "turbo"],
                     help="Whisper model for transcription (default: base — fast and "
                          "small, so the first run isn't a 3GB wait. Want sharper? "

@@ -8,7 +8,7 @@ import os
 import re
 import shutil
 import subprocess
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import NamedTuple
 
 # Markers fencing the untrusted transcript inside MANIFEST.txt. Kept module-level
@@ -833,11 +833,11 @@ def _parse_cues(raw: str) -> list[dict]:
         r"(?:(\d{1,2}):)?(\d{1,2}):(\d{2})[.,](\d{3})\s*-->\s*"
         r"(?:(\d{1,2}):)?(\d{1,2}):(\d{2})[.,](\d{3})")
     for block in re.split(r"\n\s*\n", raw.replace("\r\n", "\n").strip()):
-        lines = [l for l in block.split("\n")
-                 if l.strip() and not l.strip().startswith("WEBVTT")]
+        lines = [ln for ln in block.split("\n")
+                 if ln.strip() and not ln.strip().startswith("WEBVTT")]
         ti = mm = None
-        for i, l in enumerate(lines):
-            mm = tre.search(l)
+        for i, ln in enumerate(lines):
+            mm = tre.search(ln)
             if mm:
                 ti = i
                 break
@@ -1513,7 +1513,8 @@ def make_grids(frames_dir: str, out_dir: str, cols: int = 3, rows: int = 3,
 def save_to_kb(kb_dir: str, manifest_path: str, src: str) -> str:
     """Copy the analysis into a knowledge-base folder as a dated markdown note,
     so it lives next to the user's other notes instead of dying in ./crv-out."""
-    import datetime, re as _re
+    import datetime
+    import re as _re
     os.makedirs(kb_dir, exist_ok=True)
     slug = _re.sub(r"[^A-Za-z0-9一-鿿]+", "-", os.path.basename(src.rstrip("/")))[:60].strip("-") or "video"
     dest = os.path.join(kb_dir, f"{datetime.date.today().isoformat()}-{slug}.md")
@@ -1685,11 +1686,13 @@ def process(src: str, out_dir: str, *, scene: float = 0.30, fps_floor: float = 1
     if speakers_note:
         lines.append(f"speakers: {speakers_note}")
     # simple temporal check (free tier): one conservative line, only when confident
+    # CRV_NO_TEMPORAL=1 skips it: a full-res decode of the whole video (~6.5s/min)
     try:
-        from .temporal_check import temporal_hint
-        _hint = temporal_hint(video)
-        if _hint:
-            lines.append(_hint)
+        if not os.environ.get("CRV_NO_TEMPORAL"):
+            from .temporal_check import temporal_hint
+            _hint = temporal_hint(video)
+            if _hint:
+                lines.append(_hint)
     except Exception:
         pass
     if frames_json:

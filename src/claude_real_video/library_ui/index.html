@@ -7,7 +7,7 @@
 /* apply the saved theme + mode before first paint (no flash) */
 try{var d=document.documentElement,t=localStorage.getItem('vl.theme'),m=localStorage.getItem('vl.mode');
 d.dataset.theme=/^(paper|studio|index|overworld|dungeon|pocket)$/.test(t)?t:'paper';
-if(m==='light'||m==='dark')d.dataset.mode=m}catch(e){}
+if(m==='light'||m==='dark')d.dataset.mode=m;else if(m!=='auto')d.dataset.mode='dark'}catch(e){}
 </script>
 <style>
 /* ======================================================================
@@ -306,6 +306,12 @@ video{width:100%;height:100%;display:block;background:#000;object-fit:contain}
 [data-theme=overworld] .scrub .mk.note{background:#FCBC3C}
 .scrub .mk{height:14px;top:6px}
 .scrub .mk.chap{background:var(--muted);width:2px;margin-left:-1px;opacity:.7}
+.scrub .mk.scr{background:#2BB673;width:3px;margin-left:-1.5px}
+#lbx{position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px;cursor:zoom-out}
+#lbx[hidden]{display:none}
+#lbx img{max-width:96vw;max-height:84vh;object-fit:contain;border-radius:6px;box-shadow:0 8px 40px #000}
+#lbx .cap{color:#eee;font-size:14px;display:flex;gap:10px;align-items:center;cursor:default}
+#lbx .cap a{color:#9fd;text-decoration:none}
 .ln.chap{padding-top:36px;margin-top:6px}
 .ln.chap::before{content:attr(data-chap);position:absolute;left:8px;right:8px;top:8px;font-weight:700;color:var(--accent);border-bottom:1px solid var(--border);padding-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .scrub .mk:hover{transform:scaleX(1.8);opacity:1}
@@ -336,8 +342,8 @@ video{width:100%;height:100%;display:block;background:#000;object-fit:contain}
 #side .empty{padding:20px 10px}
 
 /* ---------- right panel ---------- */
-.tabs{display:grid;grid-template-columns:repeat(4,1fr);flex:none;border-bottom:1px solid var(--border)}
-.tab{border:0;background:transparent;color:var(--muted);padding:12px 4px;min-height:44px;font-size:13px;border-bottom:2px solid transparent;display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.tabs{display:grid;grid-template-columns:repeat(5,auto);justify-content:space-between;flex:none;border-bottom:1px solid var(--border)}
+.tab{border:0;background:transparent;color:var(--muted);padding:12px 3px;min-height:44px;font-size:12px;border-bottom:2px solid transparent;display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
 .tab .gl{display:none;font-style:normal}
 .tab[aria-selected=true]{color:var(--tab-on-ink);border-bottom-color:var(--accent);font-weight:650;background:var(--tab-on-bg)}
 .tab .bd{font:600 10.5px var(--font-mono);background:var(--raised);color:var(--muted);border-radius:999px;padding:1px 6px}
@@ -433,6 +439,13 @@ a.ts,.chipt{display:inline-block;font:600 11.5px/1.4 var(--font-mono);color:var(
 .todo.done .tt{text-decoration:line-through;color:var(--muted)}
 [data-theme=overworld] .todo.done .star::before{content:"★ "}
 .apane{flex:1;min-height:0;padding:0 18px 24px}
+.scards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;padding-top:12px}
+.scard{border:1px solid var(--border);border-radius:var(--r-sm);background:var(--raised);overflow:hidden;display:flex;flex-direction:column}
+.scard img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:#000;cursor:zoom-in}
+.scard .sb{padding:8px 10px 10px;display:flex;flex-direction:column;gap:5px}
+.scard .st{font-weight:600;font-size:13.5px;line-height:1.3}
+.scard .sn{font-size:12.5px;color:var(--muted);line-height:1.4}
+.scard .sl{display:flex;flex-wrap:wrap;gap:4px}.scard .sl a{font-size:11.5px;color:var(--accent);text-decoration:none;border:1px solid var(--border);border-radius:999px;padding:0 7px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #mine textarea{flex:none;margin:0 14px;height:42%;min-height:130px;resize:vertical;font:13px/1.55 var(--font-mono);color:var(--text);background:var(--bg);border:1px solid var(--border-strong);border-radius:var(--r-sm);padding:10px}
 [data-theme=paper] #mine textarea,[data-theme=studio] #mine textarea{background:var(--bg)}
 #mine .pv{flex:1;min-height:0;border-top:1px solid var(--border);margin-top:12px}
@@ -468,7 +481,7 @@ a.ts,.chipt{display:inline-block;font:600 11.5px/1.4 var(--font-mono);color:var(
   #player{margin-top:0;border-radius:0!important;max-height:none;outline:0!important;box-shadow:none!important}
   #cresults{display:none}
   #right{flex:1;border:0!important;margin:0!important;box-shadow:none!important;outline:0!important;border-radius:0!important}
-  .tabs{grid-template-columns:repeat(4,1fr)!important;margin:8px 10px!important;border:1px solid var(--border-strong);border-radius:var(--r-sm);padding:2px;gap:2px;background:var(--raised);border-bottom-width:1px!important}
+  .tabs{grid-template-columns:repeat(5,1fr)!important;margin:8px 10px!important;border:1px solid var(--border-strong);border-radius:var(--r-sm);padding:2px;gap:2px;background:var(--raised);border-bottom-width:1px!important}
   .tab{min-height:44px;border-radius:6px;border-bottom:0!important;font-size:12px}
   .tab[aria-selected=true]{background:var(--accent)!important;color:var(--accent-ink)!important;box-shadow:none}
   [data-theme=dungeon] .tab{flex-direction:row;min-height:44px}[data-theme=dungeon] .tab .gl{display:none}
@@ -559,7 +572,8 @@ a.ts,.chipt{display:inline-block;font:600 11.5px/1.4 var(--font-mono);color:var(
       <div class="tabs" role="tablist">
         <button class="tab" role="tab" data-tab="tr" aria-selected="true"><i class="gl">≡</i><span class="lb">Transcript</span></button>
         <button class="tab" role="tab" data-tab="ai" aria-selected="false"><i class="gl">✦</i><span class="lb">AI notes</span></button>
-        <button class="tab" role="tab" data-tab="act" aria-selected="false"><i class="gl">◆</i><span class="lb">Action steps</span><span class="bd" id="actBd"></span></button>
+        <button class="tab" role="tab" data-tab="act" aria-selected="false"><i class="gl">◆</i><span class="lb">Actions</span><span class="bd" id="actBd"></span></button>
+        <button class="tab" role="tab" data-tab="scr" aria-selected="false"><i class="gl">▣</i><span class="lb">Screens</span><span class="bd" id="scrBd"></span></button>
         <button class="tab" role="tab" data-tab="mine" aria-selected="false"><i class="gl">✎</i><span class="lb">My notes</span></button>
       </div>
       <div class="pane on" id="p-tr">
@@ -577,6 +591,10 @@ a.ts,.chipt{display:inline-block;font:600 11.5px/1.4 var(--font-mono);color:var(
       </div>
       <div class="pane" id="p-ai"><div class="apane scroll doc" id="aiBody"></div></div>
       <div class="pane" id="p-act"><div class="prog" id="prog" hidden></div><div class="apane scroll doc" id="actBody"></div></div>
+      <div class="pane" id="p-scr">
+        <div class="tbar"><input id="sq" type="search" placeholder="Filter screens (site, tool, number…)" aria-label="Filter screens" autocomplete="off"></div>
+        <div class="apane scroll" id="scrBody"></div>
+      </div>
       <div class="pane" id="mine">
         <div class="mbar"><button class="btn" id="stamp">+ timestamp</button><button id="svs" class="" disabled>Notes save automatically</button></div>
         <textarea id="mn" aria-label="My notes" spellcheck="true" placeholder="Your notes. Saved automatically next to the video. Type [@12:34] or press Ctrl+Shift+T to stamp the current time."></textarea>
@@ -614,13 +632,13 @@ const THEMES=[
  {id:'dungeon',name:'Dungeon Quest',dots:['#0D160D','#162416','#F8D878']},
  {id:'pocket',name:'Pocket RPG',dots:['#F0F0E8','#FFFFFF','#E03C28']}];
 const FLAV={
- paper:{topics:'All topics',actions:'Action steps',count:n=>n+' videos',speakers:'speakers',found:(n,q)=>n+' result'+(n==1?'':'s')+' for \u201c'+q+'\u201d',noAi:'Notes appear here once this video has been summarised.'},
- studio:{topics:'All topics',actions:'Action steps',count:n=>n+' videos',speakers:'speakers',found:(n,q)=>n+' result'+(n==1?'':'s')+' for \u201c'+q+'\u201d',noAi:'Notes appear here once this video has been summarised.'},
- index:{topics:'All topics',actions:'Action steps',count:n=>n+' videos',speakers:'speakers',found:(n,q)=>n+' result'+(n==1?'':'s')+' for \u201c'+q+'\u201d',noAi:'Notes appear here once this video has been summarised.'},
+ paper:{topics:'All topics',actions:'Actions',count:n=>n+' videos',speakers:'speakers',found:(n,q)=>n+' result'+(n==1?'':'s')+' for \u201c'+q+'\u201d',noAi:'Notes appear here once this video has been summarised.'},
+ studio:{topics:'All topics',actions:'Actions',count:n=>n+' videos',speakers:'speakers',found:(n,q)=>n+' result'+(n==1?'':'s')+' for \u201c'+q+'\u201d',noAi:'Notes appear here once this video has been summarised.'},
+ index:{topics:'All topics',actions:'Actions',count:n=>n+' videos',speakers:'speakers',found:(n,q)=>n+' result'+(n==1?'':'s')+' for \u201c'+q+'\u201d',noAi:'Notes appear here once this video has been summarised.'},
  overworld:{topics:'All worlds',actions:'\u2605 Actions',count:n=>'COINS '+String(n).padStart(3,'0'),speakers:'players',found:(n,q)=>n+' HITS FOR \u201c'+q+'\u201d',noAi:'This block is empty. Notes appear once the video has been summarised.'},
  dungeon:{topics:'All realms',actions:'Quests',count:n=>n+' scrolls',speakers:'heroes',found:(n,q)=>'Scroll of findings: '+n+' for \u201c'+q+'\u201d',noAi:'The lore is unwritten. Notes appear once the video has been summarised.'},
- pocket:{topics:'All topics',actions:'Action steps',count:n=>n+' videos',speakers:'speakers',found:(n,q)=>'Found '+n+' match'+(n==1?'':'es')+' for \u201c'+q+'\u201d!',noAi:'Notes appear here once this video has been summarised.'}};
-let theme=document.documentElement.dataset.theme||'paper', mode=LS.get('vl.mode','auto');
+ pocket:{topics:'All topics',actions:'Actions',count:n=>n+' videos',speakers:'speakers',found:(n,q)=>'Found '+n+' match'+(n==1?'':'es')+' for \u201c'+q+'\u201d!',noAi:'Notes appear here once this video has been summarised.'}};
+let theme=document.documentElement.dataset.theme||'paper', mode=LS.get('vl.mode','dark');
 if(mode!=='light'&&mode!=='dark')mode='auto';
 const flav=()=>FLAV[theme]||FLAV.paper;
 function setTheme(id){theme=id;document.documentElement.dataset.theme=id;LS.set('vl.theme',id);buildPop();renderHud();refreshLabels();renderTree();renderResults();updateActions();syncTimeUi()}
@@ -646,7 +664,7 @@ let LIB=[], F={q:'',topic:'',titleFilter:'',hasSpeakers:false,hasActions:false,h
 let collapsed=new Set(); try{collapsed=new Set(JSON.parse(LS.get('vl.collapsed','[]')))}catch(e){}
 let CUR=null;            // {id, meta, data, colors, spkIdx}
 let SEG=[], ROWS=[], STARTS=[];
-let tab=LS.get('vl.tab','tr'); if(!['tr','ai','act','mine'].includes(tab))tab='tr';
+let tab=LS.get('vl.tab','tr'); if(!['tr','ai','act','scr','mine'].includes(tab))tab='tr';
 let follow=LS.get('vl.follow','1')!=='0';
 let loadTok=0, vt=0, noVideo=false;   // vt = virtual clock when the file is missing
 let hits=[], hitsQ='', hitsKind='all';
@@ -810,7 +828,7 @@ async function openVideo(id,t){
   CUR.data=d;SEG=d.segments||[];STARTS=SEG.map(s=>s.start);
   // speaker colour = order of first appearance, stable for the whole video
   CUR.colors={};let k=0;for(const s of SEG)if(s.speaker&&!(s.speaker in CUR.colors))CUR.colors[s.speaker]=k++;
-  renderSpeakers();renderTranscript();renderChapters();renderAi();renderActions();setNotes(d.my_notes||'');
+  renderSpeakers();renderTranscript();renderChapters();renderAi();renderActions();renderScreens();setNotes(d.my_notes||'');
   setDur();renderMarkers();updateActions();applyFilters();
   lastActive=-2;updateActive(true);
   if(t!=null){if(pendingPlay)seekTo(t,true);else initialSeek(t)}  // a clicked search hit plays; a pasted deep link only seeks
@@ -865,6 +883,28 @@ function renderAi(){
   const d=CUR.data,b=$('#aiBody');
   b.innerHTML=(d.notes||'').trim()?md(d.notes,CUR.meta.duration):`<div class="empty"><h3>No AI notes yet</h3><p>${esc(flav().noAi)}</p></div>`;
 }
+let SCRV=[]; // the screens currently shown (after the filter) — the lightbox steps through these
+function renderScreens(){
+  const all=CUR.data.screens||[],q=($('#sq').value||'').toLowerCase(),body=$('#scrBody');
+  $('#scrBd').textContent=all.length||'';
+  if(!all.length){body.innerHTML=`<div class="empty"><h3>No screens yet</h3><p>Run screens.py on this video, then write screens.json.</p></div>`;return}
+  const hit=all.filter(s=>!q||[s.title,s.note,...(Array.isArray(s.links)?s.links:[])].join(' ').toLowerCase().includes(q));SCRV=hit;
+  const id=encodeURIComponent(CUR.id),host=u=>{try{const x=new URL(u);return x.host.replace(/^www\./,'')+x.pathname.replace(/\/$/,'')}catch{return u}};
+  body.innerHTML=`<div class="scards">${hit.map((s,i)=>{const src=`/still?id=${id}&f=${encodeURIComponent(s.frame)}`;
+    return `<div class="scard"><a href="${src}" target="_blank" rel="noopener" data-i="${i}"><img loading="lazy" src="${src}" alt="${esc(s.title)}"></a>
+    <div class="sb"><div><a class="chipt" href="#" data-t="${+s.t||0}">${fmt(+s.t||0)}</a> <span class="st">${esc(s.title)}</span></div>
+    ${s.note?`<div class="sn">${esc(s.note)}</div>`:''}
+    ${(Array.isArray(s.links)?s.links:[]).length?`<div class="sl">${s.links.map(u=>/^https?:\/\//.test(u)?`<a href="${esc(u)}" target="_blank" rel="noopener noreferrer" title="${esc(u)}">${esc(host(u))}</a>`:'').join('')}</div>`:''}
+    </div></div>`}).join('')||'<div class="empty"><p>No screen matches that filter.</p></div>'}</div>`;
+}
+$('#sq').addEventListener('input',()=>CUR&&renderScreens());
+/* screenshot lightbox: click a card image to view it full size; Esc / click closes; ← → step */
+const lbx=document.createElement('div');lbx.id='lbx';lbx.hidden=true;document.body.appendChild(lbx);let lbI=-1;
+function lbShow(i){const all=SCRV;if(!all.length)return;lbI=(i+all.length)%all.length;const s=all[lbI];
+  lbx.innerHTML=`<img src="/still?id=${encodeURIComponent(CUR.id)}&f=${encodeURIComponent(s.frame)}" alt="${esc(s.title)}"><div class="cap"><a class="chipt" href="#" data-t="${+s.t||0}">${fmt(+s.t||0)}</a><b>${esc(s.title)}</b><span>${lbI+1}/${all.length} · ← → · Esc</span></div>`;lbx.hidden=false}
+$('#scrBody').addEventListener('click',e=>{const a=e.target.closest('.scard > a');if(!a||e.metaKey||e.ctrlKey)return;e.preventDefault();lbShow(+a.dataset.i||0)});
+lbx.addEventListener('click',e=>{if(e.target.closest('a.chipt')){lbx.hidden=true;return}if(!e.target.closest('.cap'))lbx.hidden=true});
+document.addEventListener('keydown',e=>{if(lbx.hidden)return;if(e.key==='Escape')lbx.hidden=true;else if(e.key==='ArrowRight')lbShow(lbI+1);else if(e.key==='ArrowLeft')lbShow(lbI-1);else return;e.preventDefault();e.stopPropagation()},true);
 function parseActions(src){ // -> [{done,text}] from "- [ ] text [@mm:ss]" lines; rest rendered as markdown
   const items=[],other=[];
   for(const l of String(src||'').split('\n')){const m=l.match(/^\s*(?:[-*+]|\d+[.)])\s+\[( |x|X)\]\s+(.*)$/);
@@ -950,7 +990,7 @@ scrub.addEventListener('keydown',e=>{const k=e.key;if(k==='ArrowLeft'||k==='Arro
 function renderMarkers(){
   const box=$('#mks'),d=getDur();if(!CUR||!CUR.data||!d){box.innerHTML='';return}
   const mk=(arr,cls,who)=>arr.filter(s=>s.t<=d).map(s=>`<button class="mk ${cls}" style="left:${s.t/d*100}%" data-t="${s.t}" title="${esc(fmt(s.t)+' \u2014 '+who+': '+s.text.slice(0,120))}" aria-label="${esc(fmt(s.t)+' '+s.text.slice(0,60))}"></button>`).join('');
-  box.innerHTML=mk(CH.map(c=>({t:c.t,text:c.title})),'chap','Chapter')+mk(stampsIn(CUR.data.actions),'act','Action')+mk(stampsIn($('#mn').value),'note','Note');
+  box.innerHTML=mk(CH.map(c=>({t:c.t,text:c.title})),'chap','Chapter')+mk(stampsIn(CUR.data.actions),'act','Action')+mk(stampsIn($('#mn').value),'note','Note')+mk((CUR.data.screens||[]).map(s=>({t:+s.t||0,text:s.title||''})),'scr','Screen');
 }
 $('#mks').addEventListener('click',e=>{const b=e.target.closest('.mk');if(b){e.stopPropagation();seekTo(+b.dataset.t,true)}});
 $('#mks').addEventListener('pointerdown',e=>e.stopPropagation());
@@ -1086,7 +1126,7 @@ async function runSearch(){
   renderResults();
   if(isPhone()){const s=$('#sresults');s.scrollIntoView&&0}
 }
-const KINDS=[['all','All'],['transcript','Transcript'],['ai notes','AI notes'],['my notes','My notes']];
+const KINDS=[['all','All'],['transcript','Transcript'],['ai notes','AI notes'],['screens','Screens'],['my notes','My notes']];
 function resultsHtml(){
   if(hits===null)return '<div class="empty"><h3>Search failed</h3><p>The server did not answer. Try again.</p></div>';
   if(!hitsQ)return '';
@@ -1094,7 +1134,7 @@ function resultsHtml(){
   const words=hitsQ.toLowerCase().split(/\s+/).filter(Boolean);
   const head=`<div class="rhead"><b>${esc(flav().found(list.length,hitsQ))}</b><span class="seg" role="group" aria-label="Kind">${KINDS.map(([k,l])=>`<button data-k="${k}" aria-pressed="${hitsKind===k}">${l}</button>`).join('')}</span><button class="btn" data-clear="1" aria-label="Clear results">\u00D7</button></div>`;
   if(!list.length)return head+`<div class="empty"><h3>No matches for \u201c${esc(hitsQ)}\u201d</h3><p>Try fewer words, or search All topics</p></div>`;
-  return head+'<div class="rlist" role="list">'+list.slice(0,300).map(h=>`<button class="row" role="listitem" data-id="${esc(h.id)}" data-t="${h.t==null?'':h.t}"><div class="rt"><b>${esc(cleanTitle(h.title))}</b><span>${esc(h.kind)}</span>${h.t!=null?`<span class="tt" title="${h.approx?'Best-matching transcript moment for this note':''}">${h.approx?'≈ ':''}${fmt(h.t)}</span>`:'<span class="tt">no time</span>'}${h.speaker?`<span>${esc(spName(h.speaker))}</span>`:''}</div><div class="rx">${hlText(h.text,words)}</div></button>`).join('')+(list.length>300?`<div class="empty"><p>Showing the first 300 of ${list.length}. Add a word to narrow it.</p></div>`:'')+'</div>';
+  return head+'<div class="rlist" role="list">'+list.slice(0,300).map(h=>`<button class="row" role="listitem" data-id="${esc(h.id)}" data-t="${h.t==null?'':esc(h.t)}"><div class="rt"><b>${esc(cleanTitle(h.title))}</b><span>${esc(h.kind)}</span>${h.t!=null?`<span class="tt" title="${h.approx?'Best-matching transcript moment for this note':''}">${h.approx?'≈ ':''}${fmt(h.t)}</span>`:'<span class="tt">no time</span>'}${h.speaker?`<span>${esc(spName(h.speaker))}</span>`:''}</div><div class="rx">${hlText(h.text,words)}</div></button>`).join('')+(list.length>300?`<div class="empty"><p>Showing the first 300 of ${list.length}. Add a word to narrow it.</p></div>`:'')+'</div>';
 }
 function renderResults(){
   const html=resultsHtml();
