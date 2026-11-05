@@ -354,3 +354,9 @@ def test_cli_add_video_and_playlist(monkeypatch, capsys, root):
     follow.main(["add", "https://youtube.com/playlist?list=PL1", "--folder", "Ads"])
     assert [j["video_id"] for j in json.loads(capsys.readouterr().out)] == ["p1", "p2"]
     assert follow.list_folders()[0]["path"] == "Ads"
+
+
+@pytest.mark.parametrize("url", ["--batch-file=/etc/passwd", "file:///etc/passwd", "-x"])
+def test_enqueue_rejects_non_http(url):
+    with pytest.raises(ValueError):
+        follow.enqueue(url)

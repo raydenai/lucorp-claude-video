@@ -36,7 +36,7 @@ JSON_MAX = 64 * 1024  # follow API JSON bodies; my-notes stays on its own limit
 _LOOPBACK = frozenset({"127.0.0.1", "localhost", "::1"})
 _JOB_STATUS = frozenset({"queued", "processing", "done", "failed"})
 _ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,200}$")
-_SUB_FIELDS = ("folder", "backfill", "include_shorts", "min_minutes", "keywords", "paused", "title")
+_SUB_FIELDS = ("folder", "backfill", "include_shorts", "min_minutes", "keywords", "paused")
 
 
 def pretty(slug: str) -> str:
@@ -104,6 +104,8 @@ def _clean_url(url) -> str:
         raise ValueError("bad url")
     url = url.strip()
     if not url or len(url) > 2048 or any(c in url for c in "\x00\r\n\t "):
+        raise ValueError("bad url")
+    if urllib.parse.urlparse(url).scheme not in ("http", "https"):
         raise ValueError("bad url")
     return url
 

@@ -118,7 +118,7 @@ def _extract_info(url, flat=True):
         command.append("--flat-playlist")
     else:
         command.append("--no-playlist")
-    result = subprocess.run(command + [url], capture_output=True, text=True, check=True)
+    result = subprocess.run(command + ["--", url], capture_output=True, text=True, check=True)
     return json.loads(result.stdout)
 
 
@@ -194,6 +194,8 @@ def _new_job(url, folder, channel, title, jobs):
 
 
 def enqueue(url, folder="Inbox", channel=None, title=None):
+    if urlparse(str(url)).scheme not in ("http", "https"):
+        raise ValueError("an http(s) URL is required")  # never hand a '-flag' to yt-dlp
     _path(folder).mkdir(parents=True, exist_ok=True)  # visible in the folder tree while queued
     if channel:
         _path(folder + "/" + _channel_name(channel))
@@ -520,7 +522,7 @@ def move_video(video_path_relative_to_root, dest_folder):
 
 
 def delete_folder(name):
-    with _lock():
+    with _lock(worker=True), _lock():
         _path(name).rmdir()
 
 
