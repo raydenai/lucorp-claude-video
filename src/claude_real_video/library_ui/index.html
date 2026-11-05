@@ -235,7 +235,20 @@ svg{display:block}
 .cnt{font-size:11px;font-weight:600;color:var(--muted);font-family:var(--font-mono);letter-spacing:0;text-transform:none}
 .cards{padding:2px 0 6px 18px;display:flex;flex-direction:column;gap:3px}
 .cards.flat{padding-left:0}
-.card{display:grid;grid-template-columns:34px 1fr;gap:9px;align-items:start;padding:9px 10px;border-radius:var(--radius);border:0;background:transparent;text-align:left;width:100%}
+.card{display:flex;align-items:flex-start;gap:2px;padding:6px 4px 6px 8px;border-radius:var(--radius);border:0;background:transparent;text-align:left;width:100%}
+.cardhit{flex:1;min-width:0;display:grid;grid-template-columns:34px minmax(0,1fr);gap:9px;align-items:start;border:0;background:transparent;color:inherit;text-align:left;padding:3px 2px;font:inherit}
+.movebtn{flex:none;border:0;background:transparent;color:var(--muted);font-size:11px;padding:6px 4px;white-space:nowrap}
+.movebtn:hover{color:var(--accent)}
+.fhead{display:flex;align-items:center;gap:0}
+.fhead .th,.fhead .sf{width:auto;flex:1;min-width:0}
+.mini{border:0;background:transparent;color:var(--muted);font-size:11px;padding:4px 6px;border-radius:6px;white-space:nowrap}
+.mini:hover{color:var(--accent);background:var(--accent-soft)}
+.fops{padding:2px 8px 6px}
+.treemsg{font-size:12px;color:var(--muted);padding:0 16px 4px}
+.treemsg:empty{display:none}
+.treemsg.bad{color:#d4534e}
+.nameask{display:flex;flex-direction:column;gap:6px;padding:0 16px 10px}
+.nameask input{height:32px;padding:0 8px;border:1px solid var(--border-strong);background:var(--panel);border-radius:var(--r-sm);width:100%}
 .card:hover{background:var(--accent-soft)}
 .card.on{background:var(--sel-bg);box-shadow:var(--sel-shadow)}
 .bdg{font:11px/1 var(--font-mono);font-weight:700;min-height:22px;border-radius:calc(var(--r-sm) - 1px);background:var(--badge-bg);color:var(--badge-ink);display:grid;place-items:center;padding:0 3px;font-variant-numeric:tabular-nums}
@@ -346,8 +359,9 @@ video{width:100%;height:100%;display:block;background:#000;object-fit:contain}
 #side .empty{padding:20px 10px}
 
 /* ---------- right panel ---------- */
-.tabs{display:grid;grid-template-columns:repeat(5,auto);justify-content:space-between;flex:none;border-bottom:1px solid var(--border)}
-.tab{border:0;background:transparent;color:var(--muted);padding:12px 3px;min-height:44px;font-size:12px;border-bottom:2px solid transparent;display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.tabs{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));justify-content:space-between;flex:none;border-bottom:1px solid var(--border)}
+.tab{border:0;background:transparent;color:var(--muted);padding:12px 1px;min-height:44px;font-size:11px;border-bottom:2px solid transparent;display:flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap;min-width:0}
+.tab .lb{overflow:hidden;text-overflow:ellipsis}
 .tab .gl{display:none;font-style:normal}
 .tab[aria-selected=true]{color:var(--tab-on-ink);border-bottom-color:var(--accent);font-weight:650;background:var(--tab-on-bg)}
 .tab .bd{font:600 10.5px var(--font-mono);background:var(--raised);color:var(--muted);border-radius:999px;padding:1px 6px}
@@ -485,7 +499,7 @@ a.ts,.chipt{display:inline-block;font:600 11.5px/1.4 var(--font-mono);color:var(
   #player{margin-top:0;border-radius:0!important;max-height:none;outline:0!important;box-shadow:none!important}
   #cresults{display:none}
   #right{flex:1;border:0!important;margin:0!important;box-shadow:none!important;outline:0!important;border-radius:0!important}
-  .tabs{grid-template-columns:repeat(5,1fr)!important;margin:8px 10px!important;border:1px solid var(--border-strong);border-radius:var(--r-sm);padding:2px;gap:2px;background:var(--raised);border-bottom-width:1px!important}
+  .tabs{grid-template-columns:repeat(4,minmax(0,1fr))!important;margin:8px 10px!important;border:1px solid var(--border-strong);border-radius:var(--r-sm);padding:2px;gap:2px;background:var(--raised);border-bottom-width:1px!important}
   .tab{min-height:44px;border-radius:6px;border-bottom:0!important;font-size:12px}
   .tab[aria-selected=true]{background:var(--accent)!important;color:var(--accent-ink)!important;box-shadow:none}
   [data-theme=dungeon] .tab{flex-direction:row;min-height:44px}[data-theme=dungeon] .tab .gl{display:none}
@@ -507,6 +521,24 @@ a.ts,.chipt{display:inline-block;font:600 11.5px/1.4 var(--font-mono);color:var(
   #cscroll{padding:0 16px 16px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+#addbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px;background:var(--sidebar);border-bottom:1px solid var(--border);flex:none}
+#addbar input,#addbar select{height:32px;border:1px solid var(--border-strong);background:var(--panel);border-radius:var(--r-sm);padding:0 8px;min-width:0}
+#addUrl{flex:1 1 220px}
+#addbar label{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);white-space:nowrap}
+.al{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+#addMsg{flex-basis:100%;font-size:12.5px;color:var(--muted);min-height:1.2em}
+#addMsg.ok{color:var(--accent)}
+#addMsg.bad{color:#d4534e}
+#moveMenu{position:fixed;z-index:70;min-width:180px;max-width:280px;max-height:240px;overflow:auto;background:var(--panel);border:1px solid var(--border-strong);border-radius:var(--r-sm);box-shadow:0 12px 30px rgba(0,0,0,.28);padding:4px;display:flex;flex-direction:column}
+#moveMenu button{text-align:left;border:0;background:transparent;color:inherit;padding:7px 8px;border-radius:6px;font-size:12.5px}
+#moveMenu button:hover{background:var(--accent-soft)}
+.chrow,.qrow{padding:10px 8px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:4px}
+.chrow .top,.qrow .top{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.chrow b,.qrow b{font-weight:600}
+.chmeta,.qmeta{font-size:12px;color:var(--muted)}
+.qerr{font:12px/1.4 var(--font-mono);color:#d4534e;white-space:pre-wrap;word-break:break-word}
+.qgroup{padding:12px 8px 4px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.rowbtns{display:flex;flex-wrap:wrap;gap:6px}
 </style></head>
 <body>
 <div id="app">
@@ -517,6 +549,23 @@ a.ts,.chipt{display:inline-block;font:600 11.5px/1.4 var(--font-mono);color:var(
     <div class="tt"><small id="tbCrumb">Video Library</small><b id="tbTitle">Pick a video</b></div>
     <button id="tbSearch" aria-label="Search">⌕</button>
   </header>
+  <form id="addbar" autocomplete="off">
+    <span class="al">Add</span>
+    <input id="addUrl" type="text" placeholder="Paste a video or channel URL" aria-label="Video or channel URL" spellcheck="false">
+    <select id="addFolder" aria-label="Folder"></select>
+    <input id="addNewFolder" placeholder="New folder name" aria-label="New folder name" hidden>
+    <label id="addCatch" hidden>Catch up on
+      <select id="addBackfill" aria-label="Catch up on">
+        <option value="0">none</option>
+        <option value="10" selected>last 10</option>
+        <option value="50">last 50</option>
+        <option value="-1">all</option>
+      </select>
+    </label>
+    <label id="addShorts" hidden><input type="checkbox" id="addShortsCb"> Include Shorts</label>
+    <button class="btn" type="submit">Add</button>
+    <div id="addMsg" role="status"></div>
+  </form>
   <div id="grid">
     <aside id="side" aria-label="Library">
       <div class="sh">
@@ -537,6 +586,12 @@ a.ts,.chipt{display:inline-block;font:600 11.5px/1.4 var(--font-mono);color:var(
           <button class="chip" id="cAct" aria-pressed="false">Has action steps</button>
           <button class="chip" id="cMine" aria-pressed="false">Has my notes</button>
         </div>
+        <form id="nameAsk" class="nameask" hidden>
+          <label id="nameAskLabel" for="nameAskInput">New folder</label>
+          <input id="nameAskInput" maxlength="200" autocomplete="off" aria-label="Folder name">
+          <div class="rowbtns"><button class="btn" type="submit">Save</button><button class="btn" type="button" id="nameAskCancel">Cancel</button></div>
+        </form>
+        <div id="treeMsg" class="treemsg" role="status"></div>
       </div>
       <div class="sdiv"></div>
       <div class="sresults" id="sresults"></div>
@@ -579,6 +634,8 @@ a.ts,.chipt{display:inline-block;font:600 11.5px/1.4 var(--font-mono);color:var(
         <button class="tab" role="tab" data-tab="act" aria-selected="false"><i class="gl">◆</i><span class="lb">Actions</span><span class="bd" id="actBd"></span></button>
         <button class="tab" role="tab" data-tab="scr" aria-selected="false"><i class="gl">▣</i><span class="lb">Screens</span><span class="bd" id="scrBd"></span></button>
         <button class="tab" role="tab" data-tab="mine" aria-selected="false"><i class="gl">✎</i><span class="lb">My notes</span></button>
+        <button class="tab" role="tab" data-tab="ch" aria-selected="false"><i class="gl">◎</i><span class="lb">Channels</span></button>
+        <button class="tab" role="tab" data-tab="qu" aria-selected="false"><i class="gl">▤</i><span class="lb">Queue</span><span class="bd" id="quBd"></span></button>
       </div>
       <div class="pane on" id="p-tr">
         <div class="tbar">
@@ -605,8 +662,14 @@ a.ts,.chipt{display:inline-block;font:600 11.5px/1.4 var(--font-mono);color:var(
         <div class="pvh">Preview</div>
         <div class="pv apane scroll doc" id="mnp" style="padding-top:6px"></div>
       </div>
+      <div class="pane" id="p-ch">
+        <div class="tbar"><button class="btn" type="button" id="checkNow">Check now</button><span id="chMsg" role="status"></span></div>
+        <div class="apane scroll" id="chBody"></div>
+      </div>
+      <div class="pane" id="p-qu"><div class="apane scroll" id="quBody"></div></div>
     </section>
   </div>
+  <div id="moveMenu" role="menu" hidden></div>
   <div id="scrim"></div>
 </div>
 
@@ -616,6 +679,10 @@ a.ts,.chipt{display:inline-block;font:600 11.5px/1.4 var(--font-mono);color:var(
    Video Library. Vanilla JS, no dependencies. API (all same-origin):
    GET /api/library, GET /api/video?id=, GET /api/search?q=&topic=,
    POST /api/my-notes?id= (raw markdown), /media?id= (Range).
+   Follow: POST /api/add, GET/POST /api/folders, PATCH /api/folders,
+   DELETE /api/folders/<name>, POST /api/move, GET /api/subscriptions,
+   PATCH/DELETE /api/subscriptions/<id>, POST /api/check, GET /api/queue,
+   POST /api/queue/<id>/retry, DELETE /api/queue/<id>.
    localStorage = UI preferences only (theme, mode, follow, collapsed, tab).
    ====================================================================== */
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -664,11 +731,11 @@ function refreshLabels(){
 }
 
 /* ---------------- state ---------------- */
-let LIB=[], F={q:'',topic:'',titleFilter:'',hasSpeakers:false,hasActions:false,hasMyNotes:false};
+let LIB=[], FOLDERS=null, F={q:'',topic:'',titleFilter:'',hasSpeakers:false,hasActions:false,hasMyNotes:false};
 let collapsed=new Set(); try{collapsed=new Set(JSON.parse(LS.get('vl.collapsed','[]')))}catch(e){}
 let CUR=null;            // {id, meta, data, colors, spkIdx}
 let SEG=[], ROWS=[], STARTS=[];
-let tab=LS.get('vl.tab','tr'); if(!['tr','ai','act','scr','mine'].includes(tab))tab='tr';
+let tab=LS.get('vl.tab','tr'); if(!['tr','ai','act','scr','mine','ch','qu'].includes(tab))tab='tr';
 let follow=LS.get('vl.follow','1')!=='0';
 let loadTok=0, vt=0, noVideo=false;   // vt = virtual clock when the file is missing
 let hits=[], hitsQ='', hitsKind='all';
@@ -736,7 +803,7 @@ async function loadLibrary(){
     $('#retryLib').onclick=loadLibrary;return}
   const topics=[...new Set(LIB.map(v=>v.topic))];
   $('#fTopic').innerHTML=`<option value="">${esc(flav().topics)}</option>`+topics.map(t=>`<option value="${esc(t)}">${esc(pretty(t))}</option>`).join('');
-  refreshLabels();renderTree();route();
+  refreshLabels();await loadFolders();route();
 }
 function filtered(){
   const tf=F.titleFilter.toLowerCase();
@@ -747,19 +814,71 @@ function badgeOf(v,i){const leaf=v.id.split('/').pop(),m=leaf.match(/^(?:call-)?
 function cleanTitle(t){return t.replace(/^[\w-]{1,12}:\s*/,'').replace(/\s*\([^)]*\)\s*$/,'')}
 const named=v=>v.speakers.filter(s=>!/^SPEAKER_\d+$/.test(s));
 function spkPill(v){if(!v.speakers.length)return '';const n=named(v);return n.length===2&&v.speakers.length===2?n.join(' & '):v.speakers.length+(v.speakers.length===1?' speaker':' '+flav().speakers)}
+function childSubs(node,top){
+  const out=[];
+  (function walk(nodes,parent){
+    for(const n of nodes||[]){
+      let name=String(n&&n.name||'').replace(/^\/+|\/+$/g,'');
+      if(!name)continue;
+      if(parent&&name.indexOf(parent+'/')!==0)name=parent+'/'+name;
+      if(name!==top)out.push(name.startsWith(top+'/')?name.slice(top.length+1):name);
+      walk(n.subfolders,name);
+    }
+  })(node&&node.subfolders,top);
+  return out;
+}
+function folderTops(){
+  const tops=[],seen=new Set();
+  for(const f of FOLDERS||[]){
+    const name=String(f&&f.name||'').replace(/^\/+|\/+$/g,'');
+    if(!name||name.startsWith('_')||name.startsWith('.')||name.includes('..')||seen.has(name))continue;
+    seen.add(name);tops.push({name,node:f});
+  }
+  return {tops,seen};
+}
+function allFolderNames(){
+  const names=new Set(['Inbox']);
+  const {tops}=folderTops();
+  for(const f of tops){
+    if(!f.name||f.name==='(unsorted)')continue;
+    names.add(f.name);
+    for(const s of childSubs(f.node,f.name))if(s)names.add(f.name+'/'+s);
+  }
+  for(const v of LIB)if(v.topic&&v.topic!=='(unsorted)'&&!v.topic.startsWith('_'))names.add(v.topic);
+  return [...names].sort((a,b)=>a.localeCompare(b));
+}
 function renderTree(){
-  const tree=$('#tree'),vs=filtered(),g={};
-  for(const v of vs)((g[v.topic]??={})[v.sub||'']??=[]).push(v);
-  let h='',pad=n=>theme==='pocket'?'No.'+String(n).padStart(3,'0'):n;
-  for(const [t,subs] of Object.entries(g)){
-    const id='t:'+t,open=!collapsed.has(id),n=Object.values(subs).flat().length;
-    h+=`<div class="topic"><button class="th" data-node="${esc(id)}" aria-expanded="${open}"><i class="chev"></i><span class="nm">${esc(pretty(t))}</span><span class="cnt">${pad(n)}</span></button>`;
-    if(open)for(const [s,list] of Object.entries(subs)){
-      const sid='s:'+t+'/'+s,sopen=!s||!collapsed.has(sid);
-      if(s)h+=`<button class="sf" data-node="${esc(sid)}" aria-expanded="${sopen}"><i class="chev"></i><span class="nm">${esc(s.split('/').map(pretty).join(' / '))}</span><span class="cnt">${list.length}</span></button>`;
-      if(sopen)h+=`<div class="cards${s?'':' flat'}">${list.map((v,i)=>card(v,i)).join('')}</div>`}
-    h+='</div>'}
-  tree.innerHTML=h||'<div class="empty"><h3>No videos match</h3><p>Loosen a filter, or clear the title box.</p></div>';
+  const tree=$('#tree'),vs=filtered(),by={};
+  for(const v of vs)((by[v.topic]??={})[v.sub||'']??=[]).push(v);
+  const {tops,seen}=folderTops();
+  for(const name of Object.keys(by))if(!seen.has(name)){seen.add(name);tops.push({name,node:null})}
+  const filtering=!!(F.topic||F.titleFilter||F.hasSpeakers||F.hasActions||F.hasMyNotes);
+  tops.sort((a,b)=>a.name.localeCompare(b.name));
+  let h='<div class="fops"><button type="button" class="mini" data-new="1">New folder</button></div>',pad=n=>theme==='pocket'?'No.'+String(n).padStart(3,'0'):n,shown=0;
+  for(const f of tops){
+    const subs=by[f.name]||{};
+    const n=Object.values(subs).flat().length;
+    if(filtering&&!n)continue;
+    shown++;
+    const keys=new Set([...Object.keys(subs),...(filtering?[]:childSubs(f.node,f.name))]);
+    const id='t:'+f.name,open=!collapsed.has(id),real=f.name!=='(unsorted)';
+    h+=`<div class="topic"><div class="fhead"><button type="button" class="th" data-node="${esc(id)}" aria-expanded="${open}"><i class="chev"></i><span class="nm">${esc(pretty(f.name))}</span><span class="cnt">${pad(n)}</span></button>${real?`<button type="button" class="mini" data-rename="${esc(f.name)}">Rename</button><button type="button" class="mini" data-del="${esc(f.name)}">Delete</button>`:''}</div>`;
+    if(open){
+      const ordered=[...keys].sort((a,b)=>a===''?-1:b===''?1:a.localeCompare(b));
+      for(const s of ordered){
+        const list=subs[s]||[];
+        const sid='s:'+f.name+'/'+s,sopen=!s||!collapsed.has(sid);
+        if(s){
+          const full=f.name+'/'+s;
+          h+=`<div class="fhead"><button type="button" class="sf" data-node="${esc(sid)}" aria-expanded="${sopen}"><i class="chev"></i><span class="nm">${esc(s.split('/').map(pretty).join(' / '))}</span><span class="cnt">${list.length}</span></button><button type="button" class="mini" data-rename="${esc(full)}">Rename</button><button type="button" class="mini" data-del="${esc(full)}">Delete</button></div>`;
+          if(sopen)h+=`<div class="cards">${list.map((v,i)=>card(v,i)).join('')}</div>`;
+        }else if(list.length)h+=`<div class="cards flat">${list.map((v,i)=>card(v,i)).join('')}</div>`;
+      }
+    }
+    h+='</div>';
+  }
+  if(!shown)h+='<div class="empty"><h3>No videos match</h3><p>Loosen a filter, or clear the title box.</p></div>';
+  tree.innerHTML=h;
   $('#tree').dataset.n=vs.length;
 }
 function card(v,i){
@@ -767,11 +886,19 @@ function card(v,i){
   let ph=pills.map(p=>`<span>${esc(p)}</span>`).join('');
   if(v.has_actions)ph+=`<span class="ok">${theme==='overworld'?'\u2605':'\u2713'} actions</span>`;
   if(v.has_my_notes)ph+='<span class="me">\u270E</span>';
-  return `<button class="card${CUR&&CUR.id===v.id?' on':''}" data-id="${esc(v.id)}" title="${esc(v.title)}" aria-current="${CUR&&CUR.id===v.id}"><span class="bdg">${esc(badgeOf(v,i))}</span><span class="ct"><b>${esc(cleanTitle(v.title))}</b><span class="pills">${ph}</span></span></button>`}
+  const on=CUR&&CUR.id===v.id;
+  return `<div class="card${on?' on':''}"><button type="button" class="cardhit" data-id="${esc(v.id)}" title="${esc(v.title)}" aria-current="${on}"><span class="bdg">${esc(badgeOf(v,i))}</span><span class="ct"><b>${esc(cleanTitle(v.title))}</b><span class="pills">${ph}</span></span></button><button type="button" class="movebtn" data-id="${esc(v.id)}" aria-haspopup="menu" aria-label="Move to…">Move to…</button></div>`}
 $('#tree').addEventListener('click',e=>{
+  const menuBtn=e.target.closest('.movebtn');
+  if(menuBtn){openMove(menuBtn,menuBtn.dataset.id);return}
+  const ren=e.target.closest('[data-rename]');
+  if(ren){openNameAsk('rename',ren.dataset.rename);return}
+  const del=e.target.closest('[data-del]');
+  if(del){deleteFolder(del.dataset.del);return}
+  if(e.target.closest('[data-new]')){openNameAsk('create','');return}
   const n=e.target.closest('[data-node]');
   if(n){const id=n.dataset.node;collapsed.has(id)?collapsed.delete(id):collapsed.add(id);LS.set('vl.collapsed',JSON.stringify([...collapsed]));renderTree();return}
-  const c=e.target.closest('.card');if(c){goVideo(c.dataset.id)}});
+  const c=e.target.closest('.cardhit');if(c){goVideo(c.dataset.id)}});
 function revealSelected(){ // scrollTop maths, not scrollIntoView
   if(!CUR)return;const tree=$('#tree');
   const m=CUR.meta;let ch=false;
@@ -1069,10 +1196,15 @@ $('#fq').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();s
 $('#fNext').onclick=()=>stepMatch(1);$('#fPrev').onclick=()=>stepMatch(-1);
 
 /* ---------------- tabs ---------------- */
+let queueTimer=null;
 function setTab(t){tab=t;LS.set('vl.tab',t);
   $$('.tab').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t));
-  $$('.pane').forEach(p=>p.classList.remove('on'));$('#'+(t==='mine'?'mine':'p-'+t)).classList.add('on');
-  if(t==='tr'){const e=ROWS[lastActive];if(e&&follow)requestAnimationFrame(()=>scrollToRow(e,true))}}
+  $$('.pane').forEach(p=>p.classList.remove('on'));
+  const pane=document.getElementById(t==='mine'?'mine':'p-'+t);if(pane)pane.classList.add('on');
+  clearInterval(queueTimer);queueTimer=null;
+  if(t==='tr'){const e=ROWS[lastActive];if(e&&follow)requestAnimationFrame(()=>scrollToRow(e,true))}
+  if(t==='ch')loadChannels();
+  if(t==='qu'){loadQueue();queueTimer=setInterval(()=>{if(tab==='qu'&&document.visibilityState!=='hidden')loadQueue()},10000)}}
 $$('.tab').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 
 /* ---------------- my notes: autosave through the API only ---------------- */
@@ -1217,6 +1349,8 @@ function moveKb(d){
 document.addEventListener('keydown',e=>{
   if((e.ctrlKey||e.metaKey)&&e.shiftKey&&(e.key==='T'||e.key==='t')){e.preventDefault();stamp();return}
   if(e.key==='Escape'){
+    if(!$('#moveMenu').hidden){$('#moveMenu').hidden=true;return}
+    if(!$('#nameAsk').hidden){$('#nameAsk').hidden=true;return}
     if(!$('#tpop').hidden){popOpen(false);return}
     if(typing(document.activeElement)){document.activeElement.blur();return}
     if(document.getElementById('app').classList.contains('drawer')){closeDrawer();return}return}
@@ -1232,6 +1366,180 @@ document.addEventListener('keydown',e=>{
   if(['1','2','3','4'].includes(e.key)){setTab(['tr','ai','act','mine'][+e.key-1]);return}
   if(tab==='tr'&&(e.key==='ArrowDown'||e.key==='ArrowUp')&&!tg.closest('.results,#sresults,#tree,.scrub')){e.preventDefault();moveKb(e.key==='ArrowDown'?1:-1);return}
   if(tab==='tr'&&e.key==='Enter'&&kbIdx>=0&&tg.tagName!=='BUTTON'&&!tg.closest('.results,#sresults')){seekTo(SEG[kbIdx].start,true)}
+});
+
+/* ---------------- follow: add, folders, channels, queue ---------------- */
+async function api(method,path,body){
+  const opt={method,headers:{}};
+  if(body!==undefined){opt.headers['Content-Type']='application/json';opt.body=JSON.stringify(body)}
+  const r=await fetch(path,opt);
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(j.error||('Request failed ('+r.status+')'));
+  return j;
+}
+function treeNote(text,bad){const el=$('#treeMsg');el.textContent=text||'';el.classList.toggle('bad',!!bad)}
+function looksLikeChannel(raw){
+  let u;try{u=new URL(raw)}catch(e){return false}
+  const h=u.hostname.replace(/^www\./,'').toLowerCase();
+  if(h!=='youtube.com'&&h!=='m.youtube.com'&&h!=='music.youtube.com')return false;
+  if(u.searchParams.get('v')||(u.searchParams.get('list')&&!u.searchParams.get('v')))return false;
+  return /^\/(?:@[^/]+|channel\/[^/]+|c\/[^/]+|user\/[^/]+)(?:\/(?:videos|streams|shorts|playlists|featured|about))?\/?$/.test(u.pathname);
+}
+function syncAddKind(){
+  const ch=looksLikeChannel($('#addUrl').value.trim());
+  $('#addCatch').hidden=!ch;$('#addShorts').hidden=!ch;
+  $('#addNewFolder').hidden=$('#addFolder').value!=='__new';
+}
+function fillAddFolders(){
+  const sel=$('#addFolder'),cur=sel.value,names=allFolderNames();
+  sel.innerHTML=names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')+'<option value="__new">New folder…</option>';
+  if(cur&&[...sel.options].some(o=>o.value===cur))sel.value=cur;
+  syncAddKind();
+}
+async function loadFolders(){
+  try{
+    const r=await fetch('/api/folders');
+    if(!r.ok)throw new Error('folders');
+    const j=await r.json();
+    FOLDERS=Array.isArray(j.folders)?j.folders:[];
+  }catch(e){FOLDERS=null}
+  fillAddFolders();renderTree();
+}
+function setAddMsg(text,ok){const el=$('#addMsg');el.textContent=text||'';el.className=text?(ok?'ok':'bad'):''}
+$('#addUrl').addEventListener('input',syncAddKind);
+$('#addFolder').addEventListener('change',syncAddKind);
+$('#addbar').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const url=$('#addUrl').value.trim();
+  if(!url){setAddMsg('Paste a URL first',false);return}
+  let folder=$('#addFolder').value;
+  try{
+    if(folder==='__new'){
+      const name=$('#addNewFolder').value.trim();
+      if(!name){setAddMsg('Name the new folder',false);return}
+      await api('POST','/api/folders',{name});
+      folder=name;await loadFolders();$('#addFolder').value=name;
+    }
+    const body={url,folder};
+    if(looksLikeChannel(url)){body.backfill=+$('#addBackfill').value;body.include_shorts=$('#addShortsCb').checked}
+    const j=await api('POST','/api/add',body);
+    if(j.kind==='channel'){
+      const s=j.sub||{};
+      setAddMsg('now following '+(s.title||s.handle||s.channel_id||'channel'),true);
+    }else{
+      const n=(j.jobs||[]).length;
+      setAddMsg('queued '+n+' video'+(n===1?'':'s'),true);
+    }
+    $('#addUrl').value='';syncAddKind();
+    if(tab==='ch')loadChannels();
+    if(tab==='qu')loadQueue();
+  }catch(err){setAddMsg(err.message||'Could not add that URL',false)}
+});
+let nameMode='create',nameOld='';
+function openNameAsk(mode,old){
+  nameMode=mode;nameOld=old||'';
+  $('#nameAskLabel').textContent=mode==='rename'?'Rename folder':'New folder';
+  $('#nameAskInput').value=old||'';
+  $('#nameAsk').hidden=false;
+  $('#nameAskInput').focus();
+  $('#nameAskInput').select();
+}
+$('#nameAskCancel').onclick=()=>{$('#nameAsk').hidden=true};
+$('#nameAsk').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const name=$('#nameAskInput').value.trim();
+  if(!name)return;
+  try{
+    if(nameMode==='rename')await api('PATCH','/api/folders',{old:nameOld,new:name});
+    else await api('POST','/api/folders',{name});
+    $('#nameAsk').hidden=true;treeNote(nameMode==='rename'?'Renamed':'Folder created',false);
+    await loadFolders();
+  }catch(err){treeNote(err.message,true)}
+});
+async function deleteFolder(name){
+  try{await api('DELETE','/api/folders/'+name.split('/').map(encodeURIComponent).join('/'));treeNote('Deleted '+name,false);await loadFolders()}
+  catch(err){treeNote(err.message,true)}
+}
+function openMove(btn,id){
+  const menu=$('#moveMenu');
+  const names=allFolderNames();
+  menu.dataset.id=id;
+  menu.innerHTML=names.length?names.map(n=>`<button type="button" role="menuitem" data-dest="${esc(n)}">${esc(n)}</button>`).join(''):'<div class="empty"><p>No folders yet</p></div>';
+  menu.hidden=false;
+  const r=btn.getBoundingClientRect();
+  const left=Math.max(8,Math.min(r.left,window.innerWidth-200));
+  menu.style.left=left+'px';
+  menu.style.top=Math.min(r.bottom+4,window.innerHeight-80)+'px';
+}
+document.addEventListener('click',e=>{if(e.target.closest('#moveMenu,.movebtn'))return;$('#moveMenu').hidden=true});
+$('#moveMenu').addEventListener('click',async e=>{
+  const b=e.target.closest('[data-dest]');if(!b)return;
+  const id=$('#moveMenu').dataset.id,folder=b.dataset.dest;
+  $('#moveMenu').hidden=true;
+  try{await api('POST','/api/move',{video:id,folder});treeNote('Moved to '+folder,false);await loadLibrary()}
+  catch(err){treeNote(err.message,true)}
+});
+function whenOf(j){return String(j.updated_at||j.created_at||'').replace('T',' ').replace(/\.\d+/,'').replace(/Z$/,'').slice(0,19)}
+async function loadChannels(){
+  const body=$('#chBody');
+  try{
+    const j=await api('GET','/api/subscriptions');
+    const subs=j.subscriptions||[];
+    if(!subs.length){body.innerHTML='<div class="empty"><h3>No channels yet</h3><p>Paste a channel URL in Add. Catch up chooses how many videos to queue.</p></div>';return}
+    body.innerHTML=subs.map(s=>{
+      const bits=[];
+      if(s.backfill===0)bits.push('catch up: none');
+      else if(s.backfill<0)bits.push('catch up: all');
+      else bits.push('catch up: last '+(s.backfill==null?10:s.backfill));
+      bits.push(s.include_shorts?'Include Shorts':'no shorts');
+      if(s.min_minutes)bits.push(s.min_minutes+' min');
+      if(Array.isArray(s.keywords)&&s.keywords.length)bits.push(s.keywords.join(', '));
+      const paused=!!s.paused;if(paused)bits.push('paused');
+      return `<div class="chrow"><div class="top"><b>${esc(s.title||s.handle||s.channel_id||'Channel')}</b><span class="chmeta">${esc(s.folder||'')}</span></div><div class="chmeta">last checked ${esc(s.last_checked||'never')} · ${esc(bits.join(' · '))}</div><div class="rowbtns"><button type="button" class="btn" data-pause="${esc(s.id)}" data-paused="${paused?'1':'0'}">${paused?'Resume':'Pause'}</button><button type="button" class="btn" data-rmsub="${esc(s.id)}">Remove</button></div></div>`}).join('');
+  }catch(e){body.innerHTML=`<div class="empty"><h3>Channels unavailable</h3><p>${esc(e.message)}</p></div>`}
+}
+$('#chBody').addEventListener('click',async e=>{
+  const p=e.target.closest('[data-pause]');
+  const r=e.target.closest('[data-rmsub]');
+  try{
+    if(p){await api('PATCH','/api/subscriptions/'+encodeURIComponent(p.dataset.pause),{paused:p.dataset.paused!=='1'});await loadChannels()}
+    else if(r){await api('DELETE','/api/subscriptions/'+encodeURIComponent(r.dataset.rmsub));await loadChannels()}
+  }catch(err){$('#chMsg').textContent=err.message}
+});
+$('#checkNow').onclick=async()=>{
+  $('#chMsg').textContent='Checking…';
+  try{
+    const j=await api('POST','/api/check',{});
+    $('#chMsg').textContent='Checked '+(j.checked??0)+', '+(j.new??0)+' new';
+    loadChannels();if(tab==='qu')loadQueue();
+  }catch(e){$('#chMsg').textContent=e.message}
+};
+const QGROUPS=[['processing','Processing'],['queued','Waiting'],['failed','Failed'],['done','Done']];
+async function loadQueue(){
+  const body=$('#quBody');if(!body)return;
+  try{
+    const j=await api('GET','/api/queue');
+    const jobs=j.jobs||[];
+    const active=jobs.filter(x=>x.status==='processing'||x.status==='queued').length;
+    const badge=$('#quBd');if(badge)badge.textContent=active||'';
+    if(!jobs.length){body.innerHTML='<div class="empty"><h3>Queue is empty</h3><p>Added videos show up here while they are processed.</p></div>';return}
+    const by={};for(const job of jobs)(by[job.status]??=[]).push(job);
+    body.innerHTML=QGROUPS.map(([k,label])=>{
+      const list=by[k]||[];if(!list.length)return '';
+      return `<div class="qgroup">${label}</div>`+list.map(job=>{
+        const tail=job.error?String(job.error).slice(-240):'';
+        return `<div class="qrow"><div class="top"><b>${esc(job.title||job.video_id||job.url||'Video')}</b><span class="qmeta">${esc(job.folder||'')}</span><span class="qmeta">${esc(whenOf(job))}</span></div>${tail?`<div class="qerr" title="${esc(job.error)}">${esc(tail)}</div>`:''}<div class="rowbtns"><button type="button" class="btn" data-retry="${esc(job.id)}">Retry</button><button type="button" class="btn" data-rmjob="${esc(job.id)}">Remove</button></div></div>`}).join('')}).join('');
+  }catch(e){body.innerHTML=`<div class="empty"><h3>Queue unavailable</h3><p>${esc(e.message)}</p></div>`}
+}
+$('#quBody').addEventListener('click',async e=>{
+  const retry=e.target.closest('[data-retry]');
+  const rm=e.target.closest('[data-rmjob]');
+  try{
+    if(retry){await api('POST','/api/queue/'+encodeURIComponent(retry.dataset.retry)+'/retry',{});await loadQueue()}
+    else if(rm){await api('DELETE','/api/queue/'+encodeURIComponent(rm.dataset.rmjob));await loadQueue()}
+  }catch(err){
+    const note=document.createElement('div');note.className='treemsg bad';note.textContent=err.message;$('#quBody').prepend(note);
+  }
 });
 
 /* ---------------- init ---------------- */
