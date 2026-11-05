@@ -32,6 +32,11 @@ PORT = int(os.environ.get("CRV_LIBRARY_PORT", "8770"))
 VIDEO_NAMES = ("source.mp4", "source.webm", "source.mkv", "video.mp4")
 UI_FILE = Path(__file__).resolve().parent / "library_ui" / "index.html"
 ACTION_RE = re.compile(r"action|next step|to-?do|homework", re.I)
+JSON_MAX = 64 * 1024  # follow API JSON bodies; my-notes stays on its own limit
+_LOOPBACK = frozenset({"127.0.0.1", "localhost", "::1"})
+_JOB_STATUS = frozenset({"queued", "processing", "done", "failed"})
+_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,200}$")
+_SUB_FIELDS = ("folder", "backfill", "include_shorts", "min_minutes", "keywords", "paused")
 
 
 def pretty(slug: str) -> str:
@@ -46,6 +51,157 @@ def video_dir(vid: str) -> Path:
     if not (p / "transcript.json").is_file():
         raise ValueError("not a video folder")
     return p
+
+
+def _hidden_rel(rel: str) -> bool:
+    """Folders whose name starts with '_' are system folders (_crv and friends)."""
+    return any(part.startswith("_") for part in rel.split("/") if part not in ("", "."))
+
+
+def _safe_rel(rel: str) -> str:
+    """Relative path that stays inside ROOT. No absolutes, '..', or system folders."""
+    if not isinstance(rel, str):
+        raise ValueError("bad path")
+    rel = rel.strip()
+    if not rel or len(rel) > 500 or "\x00" in rel or "\\" in rel or rel.startswith("/"):
+        raise ValueError("bad path")
+    if re.match(r"^[A-Za-z]:", rel):
+        raise ValueError("bad path")
+    parts = rel.split("/")
+    for part in parts:
+        if part in ("", ".", "..") or part.startswith((".", "_")) or len(part) > 200:
+            raise ValueError("bad path")
+        if any(c in part for c in "\n\r\t"):
+            raise ValueError("bad path")
+    root = ROOT.resolve()
+    dest = (root / rel).resolve()
+    if root not in dest.parents:  # never the root itself, never a symlink that leaves it
+        raise ValueError("outside library")
+    try:
+        dest.relative_to(root)
+    except ValueError:
+        raise ValueError("outside library") from None
+    return rel
+
+
+def _safe_id(raw: str) -> str:
+    if not isinstance(raw, str):
+        raise ValueError("bad id")
+    raw = urllib.parse.unquote(raw)
+    if not _ID_RE.fullmatch(raw) or ".." in raw:
+        raise ValueError("bad id")
+    return raw
+
+
+def _as_int(value, name: str, lo: int, hi: int) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value < lo or value > hi:
+        raise ValueError(f"bad {name}")
+    return value
+
+
+def _clean_url(url) -> str:
+    if not isinstance(url, str):
+        raise ValueError("bad url")
+    url = url.strip()
+    if not url or len(url) > 2048 or any(c in url for c in "\x00\r\n\t "):
+        raise ValueError("bad url")
+    if urllib.parse.urlparse(url).scheme not in ("http", "https"):
+        raise ValueError("bad url")
+    return url
+
+
+def _follow():
+    from . import follow  # lazy: the follow module is built separately and may be absent
+    os.environ["CRV_ROOT"] = str(ROOT)  # follow reads CRV_ROOT; keep it on the library's root
+    return follow
+
+
+def _sub_updates(data: dict) -> dict:
+    fields = {}
+    for key in _SUB_FIELDS:
+        if key not in data:
+            continue
+        val = data[key]
+        if key == "folder":
+            fields[key] = _safe_rel(val)
+        elif key == "backfill":
+            fields[key] = _as_int(val, key, -1, 100_000)
+        elif key == "min_minutes":
+            fields[key] = _as_int(val, key, 0, 100_000)
+        elif key in ("include_shorts", "paused"):
+            if not isinstance(val, bool):
+                raise ValueError(f"bad {key}")
+            fields[key] = val
+        elif key == "keywords":
+            if val is None:
+                fields[key] = None
+            elif (isinstance(val, list) and len(val) <= 50
+                  and all(isinstance(x, str) and 0 < len(x) <= 200 and "\x00" not in x for x in val)):
+                fields[key] = val
+            else:
+                raise ValueError("bad keywords")
+        elif key == "title":
+            if not isinstance(val, str) or len(val) > 500 or "\x00" in val:
+                raise ValueError("bad title")
+            fields[key] = val
+    if not fields:
+        raise ValueError("no fields")
+    return fields
+
+
+def _playlist_entries(follow, info: dict, url: str) -> list[dict]:
+    """classify() does not list playlist videos. Use entries on that result when
+    the backend includes them, otherwise follow.playlist_entries(url)."""
+    if "entries" in info and info["entries"] is not None:
+        raw = info["entries"]
+    else:
+        fn = getattr(follow, "playlist_entries", None)
+        if not callable(fn):
+            raise ValueError("playlist entries unavailable")
+        raw = fn(url)
+    if not isinstance(raw, list) or not raw:
+        raise ValueError("playlist has no entries")
+    if len(raw) > 5000:
+        raise ValueError("playlist too large")
+    out = []
+    for entry in raw:
+        if isinstance(entry, str):
+            out.append({"url": _clean_url(entry), "title": None})
+        elif isinstance(entry, dict) and isinstance(entry.get("url"), str):
+            title = entry.get("title") if isinstance(entry.get("title"), str) else None
+            out.append({"url": _clean_url(entry["url"]), "title": title})
+        else:
+            raise ValueError("bad playlist entry")
+    return out
+
+
+def _perform_add(data: dict) -> dict:
+    url = _clean_url(data.get("url"))
+    folder = _safe_rel(data.get("folder", "Inbox"))
+    follow = _follow()
+    info = follow.classify(url)
+    if not isinstance(info, dict) or info.get("kind") not in ("video", "channel", "playlist"):
+        raise ValueError("bad classify result")
+    kind = info["kind"]
+    if kind == "channel":
+        kwargs: dict = {"folder": folder}
+        if "backfill" in data:
+            kwargs["backfill"] = _as_int(data["backfill"], "backfill", -1, 100_000)
+        if "include_shorts" in data:
+            if not isinstance(data["include_shorts"], bool):
+                raise ValueError("bad include_shorts")
+            kwargs["include_shorts"] = data["include_shorts"]
+        if "min_minutes" in data:
+            kwargs["min_minutes"] = _as_int(data["min_minutes"], "min_minutes", 0, 100_000)
+        if "keywords" in data:
+            kwargs.update(_sub_updates({"keywords": data["keywords"]}))
+        return {"kind": "channel", "sub": follow.add_subscription(url, **kwargs)}
+    if kind == "playlist":
+        jobs = [follow.enqueue(entry["url"], folder=folder, title=entry.get("title"))
+                for entry in _playlist_entries(follow, info, url)]
+        return {"kind": "playlist", "jobs": jobs}
+    title = info.get("title") if isinstance(info.get("title"), str) else None
+    return {"kind": "video", "jobs": [follow.enqueue(url, folder=folder, title=title)]}
 
 
 def read(p: Path) -> str:
@@ -109,6 +265,8 @@ def library() -> list[dict]:
     for tj in sorted(ROOT.rglob("transcript.json")):
         d = tj.parent
         rel = d.relative_to(ROOT).as_posix()
+        if _hidden_rel(rel):
+            continue
         parts = rel.split("/")
         notes = read(d / "notes.md")
         segs = segments(d)
@@ -230,7 +388,178 @@ class H(http.server.BaseHTTPRequestHandler):
     def _json(self, obj, code=200):
         self._send(json.dumps(obj).encode(), "application/json", code)
 
+    def _own_netlocs(self) -> set[str]:
+        host, port = self.server.server_address[:2]
+        port = int(port)
+        names = {host}
+        if host in _LOOPBACK:  # the page is opened as 127.0.0.1 or localhost
+            names = set(_LOOPBACK)
+        out = set()
+        for name in names:
+            shown = f"[{name}]" if ":" in name and not str(name).startswith("[") else name
+            out.add(f"{shown}:{port}".lower())
+        return out
+
+    def _same_origin(self) -> bool:
+        """Host, and Origin when the browser sent one, must be this server."""
+        hosts = self.headers.get_all("Host") or []
+        if len(hosts) != 1 or hosts[0].strip().lower() not in self._own_netlocs():
+            return False
+        origins = self.headers.get_all("Origin")
+        if not origins:
+            return True
+        if len(origins) != 1:
+            return False
+        parsed = urllib.parse.urlparse(origins[0].strip())
+        if (parsed.scheme or "").lower() != "http" or parsed.username or parsed.password or parsed.path not in ("", "/"):
+            return False
+        return parsed.netloc.lower() in self._own_netlocs()
+
+    def _guard(self) -> bool:
+        if self._same_origin():
+            return True
+        self.close_connection = True
+        self._json({"error": "forbidden"}, 403)
+        return False
+
+    def _read_json(self, required: bool = True):
+        try:
+            n = int(self.headers.get("Content-Length", "0"))
+        except (TypeError, ValueError):
+            raise ValueError("bad length") from None
+        if n < 0:
+            raise ValueError("bad length")
+        if n > JSON_MAX:
+            self.close_connection = True
+            self._json({"error": "too large"}, 413)
+            return None
+        raw = self.rfile.read(n) if n else b""
+        if not raw.strip():
+            if required:
+                raise ValueError("empty body")
+            return {}
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError:
+            raise ValueError("invalid json") from None
+        if not isinstance(data, dict):
+            raise ValueError("json object required")
+        return data
+
+    def _guarded_follow(self, fn):
+        try:
+            fn()
+        except ImportError:
+            self._json({"error": "follow unavailable"}, 503)
+        except FileNotFoundError as e:
+            self._json({"error": str(e) or "not found"}, 404)
+        except (ValueError, KeyError) as e:
+            self._json({"error": str(e) or "bad request"}, 400)
+        except OSError as e:
+            self._json({"error": str(e) or "error"}, 400)
+
+    def _get_queue(self, q: dict):
+        status = q.get("status") or None
+        if status is not None and status not in _JOB_STATUS:
+            raise ValueError("bad status")
+        jobs = _follow().list_queue(status)
+        if not isinstance(jobs, list):
+            raise ValueError("bad queue")
+        self._json({"jobs": jobs})
+
+    def _get_subs(self):
+        subs = _follow().list_subscriptions()
+        if not isinstance(subs, list):
+            raise ValueError("bad subscriptions")
+        self._json({"subscriptions": subs})
+
+    def _get_folders(self):
+        folders = _follow().list_folders()
+        if not isinstance(folders, list):
+            raise ValueError("bad folders")
+        self._json({"folders": folders})
+
+    def _post_add(self):
+        body = self._read_json(True)
+        if body is None:
+            return
+        self._json(_perform_add(body))
+
+    def _post_check(self):
+        body = self._read_json(False)
+        if body is None:
+            return
+        result = _follow().check_all()
+        if not isinstance(result, dict):
+            raise ValueError("bad check result")
+        self._json(result)
+
+    def _post_folder(self):
+        body = self._read_json(True)
+        if body is None:
+            return
+        name = _safe_rel(body.get("name"))
+        _follow().create_folder(name)
+        self._json({"ok": True, "name": name})
+
+    def _patch_folder(self):
+        body = self._read_json(True)
+        if body is None:
+            return
+        old, new = _safe_rel(body.get("old")), _safe_rel(body.get("new"))
+        _follow().rename_folder(old, new)
+        self._json({"ok": True, "old": old, "new": new})
+
+    def _post_move(self):
+        body = self._read_json(True)
+        if body is None:
+            return
+        video, folder = _safe_rel(body.get("video")), _safe_rel(body.get("folder"))
+        moved = _follow().move_video(video, folder)
+        out = {"ok": True, "video": video, "folder": folder}
+        if isinstance(moved, str):
+            try:
+                out["id"] = _safe_rel(moved)
+            except ValueError:
+                pass
+        self._json(out)
+
+    def _post_retry(self, raw_id: str):
+        body = self._read_json(False)
+        if body is None:
+            return
+        job = _follow().retry(_safe_id(raw_id))
+        self._json(job if isinstance(job, dict) else {"ok": True})
+
+    def _patch_sub(self, raw_id: str):
+        body = self._read_json(True)
+        if body is None:
+            return
+        sub = _follow().update_subscription(_safe_id(raw_id), **_sub_updates(body))
+        self._json(sub if isinstance(sub, dict) else {"ok": True})
+
+    def _delete_job(self, raw_id: str):
+        if self._read_json(False) is None:
+            return
+        _follow().remove_job(_safe_id(raw_id))
+        self._json({"ok": True})
+
+    def _delete_sub(self, raw_id: str):
+        if self._read_json(False) is None:
+            return
+        _follow().remove_subscription(_safe_id(raw_id))
+        self._json({"ok": True})
+
+    def _delete_folder(self, raw_name: str):
+        if self._read_json(False) is None:
+            return
+        name = _safe_rel(urllib.parse.unquote(raw_name))
+        _follow().delete_folder(name)
+        self._json({"ok": True})
+
     def do_GET(self):
+        if not self._guard():
+            return
         u = urllib.parse.urlparse(self.path)
         q = {k: v[0] for k, v in urllib.parse.parse_qs(u.query).items()}
         try:
@@ -240,6 +569,12 @@ class H(http.server.BaseHTTPRequestHandler):
                 return self._send(CLASSIC_PAGE.encode(), "text/html; charset=utf-8")
             if u.path == "/api/library":
                 return self._json({"root": str(ROOT), "videos": library()})
+            if u.path == "/api/queue":
+                return self._guarded_follow(lambda: self._get_queue(q))
+            if u.path == "/api/subscriptions":
+                return self._guarded_follow(self._get_subs)
+            if u.path == "/api/folders":
+                return self._guarded_follow(self._get_folders)
             if u.path == "/api/search":
                 return self._json(search(q.get("q", ""), q.get("topic", "")))
             if u.path == "/api/video":
@@ -300,11 +635,8 @@ class H(http.server.BaseHTTPRequestHandler):
             except (ConnectionError, OSError):
                 pass  # browser cancelled the range (normal while seeking)
 
-    def do_POST(self):
-        u = urllib.parse.urlparse(self.path)
+    def _post_notes(self, u):
         q = {k: v[0] for k, v in urllib.parse.parse_qs(u.query).items()}
-        if u.path != "/api/my-notes":
-            return self._json({"error": "not found"}, 404)
         try:
             d = video_dir(q["id"])
         except (ValueError, KeyError) as e:
@@ -317,6 +649,50 @@ class H(http.server.BaseHTTPRequestHandler):
         tmp.write_text(text, encoding="utf-8")
         os.replace(tmp, d / "my-notes.md")  # atomic: a crash never leaves half a file
         self._json({"saved": True, "bytes": len(text.encode())})
+
+    def do_POST(self):
+        if not self._guard():
+            return
+        u = urllib.parse.urlparse(self.path)
+        if u.path == "/api/my-notes":
+            return self._post_notes(u)
+        if u.path == "/api/add":
+            return self._guarded_follow(self._post_add)
+        if u.path == "/api/check":
+            return self._guarded_follow(self._post_check)
+        if u.path == "/api/folders":
+            return self._guarded_follow(self._post_folder)
+        if u.path == "/api/move":
+            return self._guarded_follow(self._post_move)
+        m = re.fullmatch(r"/api/queue/([^/]+)/retry", u.path)
+        if m:
+            return self._guarded_follow(lambda: self._post_retry(m.group(1)))
+        self._json({"error": "not found"}, 404)
+
+    def do_PATCH(self):
+        if not self._guard():
+            return
+        u = urllib.parse.urlparse(self.path)
+        if u.path == "/api/folders":
+            return self._guarded_follow(self._patch_folder)
+        m = re.fullmatch(r"/api/subscriptions/([^/]+)", u.path)
+        if m:
+            return self._guarded_follow(lambda: self._patch_sub(m.group(1)))
+        self._json({"error": "not found"}, 404)
+
+    def do_DELETE(self):
+        if not self._guard():
+            return
+        path = urllib.parse.urlparse(self.path).path
+        m = re.fullmatch(r"/api/queue/([^/]+)", path)
+        if m:
+            return self._guarded_follow(lambda: self._delete_job(m.group(1)))
+        m = re.fullmatch(r"/api/subscriptions/([^/]+)", path)
+        if m:
+            return self._guarded_follow(lambda: self._delete_sub(m.group(1)))
+        if path.startswith("/api/folders/"):
+            return self._guarded_follow(lambda: self._delete_folder(path[len("/api/folders/"):]))
+        self._json({"error": "not found"}, 404)
 
 
 CLASSIC_PAGE = r"""<!doctype html>
