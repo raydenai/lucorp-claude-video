@@ -24,9 +24,15 @@ if [ -e "$out" ] && [ ! -d "$out" ]; then
   echo "crv-watch: $out exists and is not a folder" >&2; exit 2
 fi
 fresh=0; [ -d "$out" ] || fresh=1
-if [ -d "$out" ] && [ -n "$(ls -A "$out")" ]; then
+# crv occasionally finishes without frames.json (frame times not parsed, seen under heavy load);
+# such a folder is incomplete, and crv's "already watched" check would keep skipping it -> --overwrite
+if [ -d "$out" ] && [ -n "$(ls -A "$out")" ] && [ ! -f "$out/frames.json" ]; then
+  echo "crv-watch: $out has no frames.json — re-running crv with --overwrite" >&2
+  args+=(--overwrite)
+fi
+if [ -f "$out/frames.json" ]; then
   echo "exists: $out (reusing)"
-elif ! crv "$src" -o "$out" "${args[@]}"; then
+elif ! crv "$src" -o "$out" "${args[@]}" || [ ! -f "$out/frames.json" ]; then
   if [ -n "$login_site" ]; then
     echo "crv-watch: download failed. $login_site needs a logged-in Chrome session —" >&2
     echo "  open Chrome, make sure you're logged in at https://$login_site, play the video once, then re-run." >&2
