@@ -343,3 +343,14 @@ def test_work_title_with_ellipsis(monkeypatch, root):
     monkeypatch.setattr(follow.subprocess, "run", run)
     assert follow.work_once()["status"] == "done"
     assert follow._unique_component("a..b") != follow._unique_component("a-b")
+
+
+def test_cli_add_video_and_playlist(monkeypatch, capsys, root):
+    follow.main(["add", "https://youtu.be/abc", "--folder", "Ads/Meta"])
+    assert json.loads(capsys.readouterr().out)["video_id"] == "abc"
+    assert (root / "Ads" / "Meta").is_dir()  # queued target folder is created
+    monkeypatch.setattr(follow, "_extract_info", lambda *a, **kw: {
+        "entries": [{"id": "p1", "title": "One"}, {"id": "p2", "title": "Two"}]})
+    follow.main(["add", "https://youtube.com/playlist?list=PL1", "--folder", "Ads"])
+    assert [j["video_id"] for j in json.loads(capsys.readouterr().out)] == ["p1", "p2"]
+    assert follow.list_folders()[0]["path"] == "Ads"

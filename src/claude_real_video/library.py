@@ -110,6 +110,7 @@ def _clean_url(url) -> str:
 
 def _follow():
     from . import follow  # lazy: the follow module is built separately and may be absent
+    os.environ["CRV_ROOT"] = str(ROOT)  # follow reads CRV_ROOT; keep it on the library's root
     return follow
 
 

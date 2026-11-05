@@ -359,7 +359,7 @@ video{width:100%;height:100%;display:block;background:#000;object-fit:contain}
 #side .empty{padding:20px 10px}
 
 /* ---------- right panel ---------- */
-.tabs{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));justify-content:space-between;flex:none;border-bottom:1px solid var(--border)}
+.tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));justify-content:space-between;flex:none;border-bottom:1px solid var(--border)}
 .tab{border:0;background:transparent;color:var(--muted);padding:12px 1px;min-height:44px;font-size:11px;border-bottom:2px solid transparent;display:flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap;min-width:0}
 .tab .lb{overflow:hidden;text-overflow:ellipsis}
 .tab .gl{display:none;font-style:normal}
@@ -1528,7 +1528,7 @@ async function loadQueue(){
       const list=by[k]||[];if(!list.length)return '';
       return `<div class="qgroup">${label}</div>`+list.map(job=>{
         const tail=job.error?String(job.error).slice(-240):'';
-        return `<div class="qrow"><div class="top"><b>${esc(job.title||job.video_id||job.url||'Video')}</b><span class="qmeta">${esc(job.folder||'')}</span><span class="qmeta">${esc(whenOf(job))}</span></div>${tail?`<div class="qerr" title="${esc(job.error)}">${esc(tail)}</div>`:''}<div class="rowbtns"><button type="button" class="btn" data-retry="${esc(job.id)}">Retry</button><button type="button" class="btn" data-rmjob="${esc(job.id)}">Remove</button></div></div>`}).join('')}).join('');
+        return `<div class="qrow"><div class="top"><b>${esc(job.title||job.video_id||job.url||'Video')}</b><span class="qmeta">${esc(job.folder||'')}</span><span class="qmeta">${esc(whenOf(job))}</span></div>${tail?`<div class="qerr" title="${esc(job.error)}">${esc(tail)}</div>`:''}<div class="rowbtns">${job.status==='failed'?`<button type="button" class="btn" data-retry="${esc(job.id)}">Retry</button>`:''}<button type="button" class="btn" data-rmjob="${esc(job.id)}">Remove</button></div></div>`}).join('')}).join('');
   }catch(e){body.innerHTML=`<div class="empty"><h3>Queue unavailable</h3><p>${esc(e.message)}</p></div>`}
 }
 $('#quBody').addEventListener('click',async e=>{

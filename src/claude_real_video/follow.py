@@ -151,6 +151,11 @@ def _entry_url(entry):
     return "https://www.youtube.com/watch?v=" + str(entry.get("id") or url)
 
 
+def playlist_entries(url):
+    return [{"url": _entry_url(e), "title": e.get("title")}
+            for e in _entries(_extract_info(url)) if e]
+
+
 def _keywords(keywords):
     if keywords is None:
         return []
@@ -189,7 +194,7 @@ def _new_job(url, folder, channel, title, jobs):
 
 
 def enqueue(url, folder="Inbox", channel=None, title=None):
-    _path(folder)
+    _path(folder).mkdir(parents=True, exist_ok=True)  # visible in the folder tree while queued
     if channel:
         _path(folder + "/" + _channel_name(channel))
     with _lock():
@@ -202,7 +207,7 @@ def enqueue(url, folder="Inbox", channel=None, title=None):
 
 def add_subscription(url, folder="Inbox", backfill=10, include_shorts=False,
                      min_minutes=0, keywords=None):
-    _path(folder)
+    _path(folder).mkdir(parents=True, exist_ok=True)
     if classify(url)["kind"] != "channel":
         raise ValueError("a channel URL is required")
     if not isinstance(backfill, int) or backfill < -1:
@@ -537,9 +542,15 @@ def main(argv=None):
     commands.add_parser("work").add_argument("--loop", action="store_true")
     args = parser.parse_args(argv)
     try:
-        if args.command == "add":
+        kind = classify(args.url)["kind"] if args.command == "add" else None
+        if kind == "channel":
             result = add_subscription(args.url, args.folder, args.backfill, args.shorts,
                                       args.min_minutes, args.keywords)
+        elif kind == "playlist":
+            result = [enqueue(e["url"], args.folder, title=e["title"])
+                      for e in playlist_entries(args.url)]
+        elif kind == "video":
+            result = enqueue(args.url, args.folder)
         elif args.command == "list":
             result = list_subscriptions()
         elif args.command in ("pause", "resume"):
