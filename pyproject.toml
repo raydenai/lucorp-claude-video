@@ -38,6 +38,7 @@ crv = "claude_real_video.cli:main"
 crv-web = "claude_real_video.serve:main"
 crv-mcp = "claude_real_video.mcp_server:main"
 crv-ask = "claude_real_video.memory:main"
+crv-follow = "claude_real_video.follow:main"
 
 [project.urls]
 Homepage = "https://github.com/HUANGCHIHHUNGLeo/claude-real-video"
