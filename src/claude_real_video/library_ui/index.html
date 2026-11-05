@@ -10,6 +10,10 @@ d.dataset.theme=/^(paper|studio|index|overworld|dungeon|pocket)$/.test(t)?t:'pap
 if(m==='light'||m==='dark')d.dataset.mode=m;else if(m!=='auto')d.dataset.mode='dark'}catch(e){}
 </script>
 <style>
+.mdt{overflow-x:auto;margin:6px 0 14px}
+.mdt table{border-collapse:collapse;font-size:12px}
+.mdt th,.mdt td{border:1px solid color-mix(in srgb,currentColor 25%,transparent);padding:3px 8px;text-align:left;white-space:nowrap}
+.mdt th{font-weight:600}
 /* ======================================================================
    Video Library: six themes, one layout.
    Colours are CSS variables. Each theme is [data-theme] on <html> and gives
@@ -688,9 +692,15 @@ function inline(src,dur){
   return s.replace(/\u0000(\d+)\u0000/g,(m,i)=>keep[+i]);
 }
 function md(src,dur){
-  let out='',stack=[]; // stack of {tag, indent}
+  let out='',stack=[],tbl=0; // stack of {tag, indent}; tbl = inside a | table |
   const close=n=>{while(stack.length>n){out+='</li></'+stack.pop().tag+'>'}};
   for(const raw of String(src||'').replace(/\r/g,'').split('\n')){
+    if(/^\s*\|.*\|\s*$/.test(raw)){close(0);
+      if(/^\s*\|[\s:|-]+\|\s*$/.test(raw))continue;  // header separator row
+      const tag=tbl?'td':'th';
+      out+=(tbl?'':'<div class="mdt"><table>')+'<tr>'+raw.trim().slice(1,-1).split('|')
+        .map(c=>`<${tag}>${inline(c.trim(),dur)}</${tag}>`).join('')+'</tr>';tbl=1;continue}
+    if(tbl){out+='</table></div>';tbl=0}
     const h=raw.match(/^(#{1,6})\s+(.*)$/), li=raw.match(/^(\s*)([-*+]|\d+[.)])\s+(.*)$/);
     if(li){
       const ind=li[1].replace(/\t/g,'  ').length, tag=/\d/.test(li[2])?'ol':'ul';
@@ -704,7 +714,7 @@ function md(src,dur){
     if(h){const n=Math.min(3,h[1].length);out+=`<h${n}>${inline(h[2],dur)}</h${n}>`}
     else out+='<p>'+inline(raw,dur)+'</p>';
   }
-  close(0);return out;
+  if(tbl)out+='</table></div>';close(0);return out;
 }
 function stampsIn(text){ // [{t, text}] for markers: every [@mm:ss] / @mm:ss in the text, one per line occurrence
   const out=[];String(text||'').split('\n').forEach(line=>{

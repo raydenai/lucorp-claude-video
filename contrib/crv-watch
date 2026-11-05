@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # crv-watch <url-or-file> [topic] [slug] — the whole Video Library pipeline in one go:
-# crv (download + transcript + keyframes) → screens.py (1080p stills + OCR) → draft.py (cheap-LLM
+# crv (download + transcript + keyframes) → screens.py (1080p stills + OCR) → vision.py (vision-model
+# read of each distinct screen; CRV_NO_VISION=1 skips) → draft.py (cheap-LLM
 # notes.md + screens.json, skipped if they exist) → brain.py (SEZARS-BRAIN vault note + brain capture)
 # → dashboard up. Output: ~/crv-out/<topic>/<slug>. Scripts live in ~/src/lucorp-claude-video/contrib.
 set -euo pipefail
@@ -36,6 +37,9 @@ elif ! crv "$src" -o "$out" "${args[@]}"; then
   exit 1
 fi
 python3 "$here/screens.py" "$out"
+if [ -z "${CRV_NO_VISION:-}" ]; then
+  python3 "$here/vision.py" "$out" || echo "crv-watch: vision failed (OCR-only notes; re-run vision.py later)" >&2
+fi
 python3 "$here/draft.py" "$out" || echo "crv-watch: draft failed (notes can be written later; continuing)" >&2
 if [ -z "${CRV_NO_BRAIN:-}" ]; then
   python3 "$here/brain.py" "$out" || echo "crv-watch: brain push failed (re-run brain.py later)" >&2
