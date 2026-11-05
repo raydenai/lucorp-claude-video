@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# crv-watch <url-or-file> [topic] [slug] — the whole Video Library pipeline in one go:
+# crv (download + transcript + keyframes) → screens.py (1080p stills + OCR) → vision.py (vision-model
+# read of each distinct screen; CRV_NO_VISION=1 skips) → draft.py (cheap-LLM
+# notes.md + screens.json, skipped if they exist) → brain.py (SEZARS-BRAIN vault note + brain capture)
+# → dashboard up. Output: ~/crv-out/<topic>/<slug>. Scripts live in ~/src/lucorp-claude-video/contrib.
+set -euo pipefail
+src="${1:?usage: crv-watch <url-or-file> [topic] [slug]}"
+topic="${2:-inbox}"
+# default slug: date + readable name + short hash of the FULL source, so ?v=ONE and ?v=TWO never share a folder
+base="$(basename "${src%%\?*}" | sed -E 's/\.[A-Za-z0-9]+$//; s/[^A-Za-z0-9]+/-/g; s/^-+|-+$//g' | cut -c1-32)"
+slug="${3:-$(date +%Y-%m-%d)-${base:-video}-$(printf '%s' "$src" | shasum | cut -c1-6)}"
+safe() { printf '%s' "$1" | sed -E 's/[^A-Za-z0-9._-]+/-/g; s/^[.-]+//'; }  # no '/', no leading '.'
+topic="$(safe "$topic")"; slug="$(safe "$slug")"
+[ -n "$topic" ] && [ -n "$slug" ] || { echo "crv-watch: topic/slug empty after sanitising" >&2; exit 2; }
+out="$HOME/crv-out/$topic/$slug"
+here="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+args=(--grid)
+login_site=""
+case "$src" in *facebook.com*|*fb.watch*) login_site=facebook.com ;; *instagram.com*) login_site=instagram.com ;; esac
+[ -n "$login_site" ] && args+=(--cookies-from-browser chrome)
+
+if [ -e "$out" ] && [ ! -d "$out" ]; then
+  echo "crv-watch: $out exists and is not a folder" >&2; exit 2
+fi
+fresh=0; [ -d "$out" ] || fresh=1
+# crv occasionally finishes without frames.json (frame times not parsed, seen under heavy load);
+# such a folder is incomplete, and crv's "already watched" check would keep skipping it -> --overwrite
+if [ -d "$out" ] && [ -n "$(ls -A "$out")" ] && [ ! -f "$out/frames.json" ]; then
+  echo "crv-watch: $out has no frames.json — re-running crv with --overwrite" >&2
+  args+=(--overwrite)
+fi
+if [ -f "$out/frames.json" ]; then
+  echo "exists: $out (reusing)"
+elif ! crv "$src" -o "$out" "${args[@]}" || [ ! -f "$out/frames.json" ]; then
+  if [ -n "$login_site" ]; then
+    echo "crv-watch: download failed. $login_site needs a logged-in Chrome session —" >&2
+    echo "  open Chrome, make sure you're logged in at https://$login_site, play the video once, then re-run." >&2
+    echo "  (macOS may ask for Keychain access to Chrome cookies: allow it.)" >&2
+  fi
+  # only remove a folder this run created (never a pre-existing path)
+  if [ "$fresh" = 1 ] && [ -d "$out" ]; then rm -rf "$out"; rmdir "$(dirname "$out")" 2>/dev/null || true; fi
+  exit 1
+fi
+python3 "$here/screens.py" "$out"
+if [ -z "${CRV_NO_VISION:-}" ]; then
+  python3 "$here/vision.py" "$out" || echo "crv-watch: vision failed (OCR-only notes; re-run vision.py later)" >&2
+fi
+python3 "$here/draft.py" "$out" || echo "crv-watch: draft failed (notes can be written later; continuing)" >&2
+if [ -z "${CRV_NO_BRAIN:-}" ]; then
+  python3 "$here/brain.py" "$out" || echo "crv-watch: brain push failed (re-run brain.py later)" >&2
+fi
+mkdir -p "$HOME/.crv"
+if ! curl -s -o /dev/null http://127.0.0.1:8770/; then
+  nohup "$HOME/.local/share/uv/tools/claude-real-video/bin/python" -m claude_real_video.library \
+    --root "$HOME/crv-out" --no-open >"$HOME/.crv/library.log" 2>&1 &
+  sleep 2
+fi
+echo "folder:    $out"
+echo "dashboard: http://127.0.0.1:8770/#v=$(python3 -c 'import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1],safe=""))' "$topic/$slug")"

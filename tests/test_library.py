@@ -188,7 +188,7 @@ def test_pages(lib):
     assert st == 200 and h["Content-Type"].startswith("text/html")
     # the themed single file: six themes, the picker, no external requests
     for t in ("paper", "studio", "index", "overworld", "dungeon", "pocket"):
-        assert f'data-theme=' in html and t in html
+        assert 'data-theme=' in html and t in html
     for needle in ("vl.theme", "vl.mode", "/api/library", "/api/video?id=", "/api/search?q=",
                    "/api/my-notes?id=", "/media?id="):
         assert needle in html, needle
@@ -208,3 +208,40 @@ def test_best_moment_points_unstamped_note_at_its_transcript_part():
     assert library.best_moment("- Build citations and reviews on the Business Profile first", segs) == 30
     assert library.best_moment("# Build citations reviews business profile", segs) is None   # headings never matched
     assert library.best_moment("- Totally unrelated pricing tiers story", segs) is None      # weak overlap = no time
+
+
+def test_screens_tab_untrusted_json_and_still_route(lib):
+    d = lib["dir"]
+    (d / "hires").mkdir()
+    (d / "hires" / "frame_001.jpg").write_bytes(b"\xff\xd8jpeg")
+    (d / "screens.json").write_text(json.dumps([
+        {"t": 4.5, "frame": "frame_001.jpg", "title": "Porkbun guarantee", "note": "n",
+         "links": ["https://porkbun.com", "javascript:alert(1)", 42, None]},
+        {"t": '0" onfocus="alert(1)', "frame": "frame_002.jpg", "title": "guarantee injected t"},
+        {"t": 1, "frame": "../notes.md", "title": "guarantee bad frame"},
+        42, "stale", None,
+        {"t": 2, "frame": "frame_003.jpg", "title": "guarantee", "links": "https://x.com"},
+        {"t": float("inf"), "frame": "frame_004.jpg", "title": "inf"},
+        {"t": 10 ** 400, "frame": "frame_005.jpg", "title": "huge"},
+    ]), encoding="utf-8")
+    st, j = jget(lib, f"/api/video?id={Q}")
+    assert st == 200
+    sc = j["screens"]
+    assert [s["frame"] for s in sc] == ["frame_001.jpg", "frame_002.jpg", "frame_003.jpg",
+                                         "frame_004.jpg", "frame_005.jpg"]
+    assert sc[3]["t"] == 0.0 and sc[4]["t"] == 0.0              # inf / overflow can't break the API
+    assert sc[0]["links"] == ["https://porkbun.com"]          # js:, non-strings dropped
+    assert sc[1]["t"] == 0.0 and isinstance(sc[1]["t"], float)  # string t can't reach data-t
+    assert sc[2]["links"] == []                               # non-list links ignored
+    st, hits = jget(lib, "/api/search?q=guarantee")             # malformed entries must not crash search
+    assert st == 200
+    assert all(isinstance(h["t"], float) for h in hits if h["kind"] == "screens")
+    assert len([h for h in hits if h["kind"] == "screens"]) == 3
+    st, hits = jget(lib, "/api/search?q=porkbun.com")             # matched only via a link -> snippet shows it
+    assert any(h["kind"] == "screens" and "porkbun.com" in h["text"] for h in hits)
+    st, _, body = call(lib, "GET", f"/still?id={Q}&f=frame_001.jpg")
+    assert st == 200 and body == b"\xff\xd8jpeg"
+    assert call(lib, "GET", f"/still?id={Q}&f=../notes.md")[0] == 400
+    assert call(lib, "GET", f"/still?id={Q}&f=frame_009.jpg")[0] == 404
+    vids = {v["id"]: v for v in jget(lib, "/api/library")[1]["videos"]}
+    assert vids[ID]["has_screens"] and not vids["seo/01-no-video"]["has_screens"]

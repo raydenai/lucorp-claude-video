@@ -24,11 +24,11 @@ dependencies = [
 
 [project.optional-dependencies]
 whisper = ["openai-whisper>=20240930"]
-fast = ["faster-whisper>=1.1.0"]
+fast = ["faster-whisper>=1.1.0", "av>=17.1,<19"]  # av 19 dropped open(metadata_errors=) that faster-whisper 1.2.x calls -> VAD gate dies
 # faster-whisper is not the engine here — it supplies the Silero VAD that
 # pre-gates mlx-whisper (which has no VAD of its own) against hallucinated captions.
 # 1.2.0 is the floor: SpeechTimestampsMap.get_original_time gained is_end there.
-mlx = ["mlx-whisper>=0.4", "faster-whisper>=1.2.0"]
+mlx = ["mlx-whisper>=0.4", "faster-whisper>=1.2.0", "av>=17.1,<19"]
 speakers = ["sherpa-onnx>=1.13.4", "numpy>=1.24"]
 mcp = ["mcp>=1.2"]
 
@@ -48,3 +48,6 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 claude_real_video = ["library_ui/*.html"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
