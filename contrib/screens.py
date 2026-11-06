@@ -37,9 +37,13 @@ def main() -> None:
 
     def work(f):
         img, txt = out / "hires" / f["file"], out / "ocr" / (f["file"][:-4] + ".txt")
+        for back in (0, 1.0):  # a keyframe in the last few ms has nothing to decode: step back once
+            if img.exists():
+                break
+            subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", str(max(0, f["timestamp_sec"] - back)), "-i", str(src),
+                            "-frames:v", "1", "-q:v", "3", str(img)], capture_output=True)
         if not img.exists():
-            subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", str(f["timestamp_sec"]), "-i", str(src),
-                            "-frames:v", "1", "-q:v", "3", str(img)], check=True)
+            return f["timestamp_sec"], ""
         if not txt.exists():
             subprocess.run(["tesseract", str(img), str(txt)[:-4], "--psm", "3"],
                            check=True, capture_output=True)
